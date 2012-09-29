@@ -1,0 +1,77 @@
+<html><head><link rel="stylesheet" type="text/css" href="css/book.css"/><link rel="stylesheet" type="text/css" href="css/highlight.css"/><link rel="stylesheet" type="text/css" href="css/console.css"/><link rel="stylesheet" type="text/css" href="css/codemirror.css"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>More (obscure) control structures -- Eloquent JavaScript</title></head><body><script type="text/javascript" src="js/before.js"> </script><div class="content"><script type="text/javascript">var chapterTag = 'control';</script><div class="navigation"><a href="chapter14.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="appendix2.html">Next chapter &gt;&gt;</a></div><h1><span class="number">Appendix 1: </span>More (obscure) control structures</h1><div class="block"><p>In <a href="chapter2.html">chapter 2</a>, a number of control statements were introduced, such as
+<code>while</code>, <code>for</code>, and <code>break</code>. To keep things simple, I left out some
+others, which, in my experience, are a lot less useful. This appendix
+briefly describes these missing control statements.</p></div><hr/><div class="block"><p>First, there is <a name="key1"></a><code>do</code>. <code>do</code> works like <code>while</code>, but instead of
+executing the loop body zero or more times, it executes it one or more
+times. A <code>do</code> loop looks like this:</p><pre class="code"><span class="keyword">do</span> {
+  <span class="keyword">var</span> <span class="variable">answer</span> = <span class="variable">prompt</span>(<span class="string">&quot;Say 'moo'.&quot;</span>, <span class="string">&quot;&quot;</span>);
+  <span class="variable">print</span>(<span class="string">&quot;You said '&quot;</span>, <span class="variable">answer</span>, <span class="string">&quot;'.&quot;</span>);
+} <span class="keyword">while</span> (<span class="variable">answer</span> != <span class="string">&quot;moo&quot;</span>);</pre><p>To emphasise the fact that the condition is only checked <em>after</em> the
+loop has run once, it is written at the end of the loop's body.</p></div><hr/><div class="block"><p>Next, there is <a name="key2"></a><code>continue</code>. This one is closely related to <code>break</code>,
+and can be used in the same places. While <code>break</code> jumps <em>out</em> of a
+loop and causes the program to proceed after the loop, <code>continue</code>
+jumps to the next iteration of the loop.</p><pre class="code"><span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">i</span> = <span class="atom">0</span>; <span class="variable">i</span> &lt; <span class="atom">10</span>; <span class="variable">i</span>++) {
+  <span class="keyword">if</span> (<span class="variable">i</span> % <span class="atom">3</span> != <span class="atom">0</span>)
+    <span class="keyword">continue</span>;
+  <span class="variable">print</span>(<span class="variable">i</span>, <span class="string">&quot; is divisible by three.&quot;</span>);
+}</pre><p>A similar effect can usually be produced using just <code>if</code>, but there
+are cases where <code>continue</code> looks nicer.</p></div><hr/><div class="block"><p>When there is a loop sitting inside another loop, a <code>break</code> or
+<code>continue</code> statement will affect only the inner loop. Sometimes you
+want to jump out of the <em>outer</em> loop. To be able to refer to a
+specific loop, loop statements can be <a name="key3"></a>labelled. A label is a name
+(any valid variable name will do), followed by a colon (<code>:</code>).</p><pre class="code"><span class="property">outer</span>: <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">sideA</span> = <span class="atom">1</span>; <span class="variable">sideA</span> &lt; <span class="atom">10</span>; <span class="variable">sideA</span>++) {
+  <span class="property">inner</span>: <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">sideB</span> = <span class="atom">1</span>; <span class="variable">sideB</span> &lt; <span class="atom">10</span>; <span class="variable">sideB</span>++) {
+    <span class="keyword">var</span> <span class="variable">hypotenuse</span> = <span class="variable">Math</span>.<span class="property">sqrt</span>(<span class="variable">sideA</span> * <span class="variable">sideA</span> + <span class="variable">sideB</span> * <span class="variable">sideB</span>);
+    <span class="keyword">if</span> (<span class="variable">hypotenuse</span> % <span class="atom">1</span> == <span class="atom">0</span>) {
+      <span class="variable">print</span>(<span class="string">&quot;A right triangle with straight sides of length &quot;</span>,
+            <span class="variable">sideA</span>, <span class="string">&quot; and &quot;</span>, <span class="variable">sideB</span>, <span class="string">&quot; has a hypotenuse of &quot;</span>,
+            <span class="variable">hypotenuse</span>, <span class="string">&quot;.&quot;</span>);
+      <span class="keyword">break</span> <span class="variable">outer</span>;
+    }
+  }
+}</pre></div><hr/><div class="block"><p>Next, there is a construct called <a name="key4"></a><code>switch</code> which can be used to
+choose which code to execute based on some value. This is a very
+useful thing to do, but the syntax JavaScript uses for this (which it
+took from the C programming language) is so clumsy and ugly that I
+usually prefer to use a chain of <code>if</code> statements instead.</p><pre class="code"><span class="keyword">function</span> <span class="variable">weatherAdvice</span>(<span class="variabledef">weather</span>) {
+  <span class="keyword">switch</span>(<span class="localvariable">weather</span>) {
+    <span class="keyword">case</span> <span class="string">&quot;rainy&quot;</span>:
+      <span class="variable">print</span>(<span class="string">&quot;Remember to bring an umbrella.&quot;</span>);
+      <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">&quot;sunny&quot;</span>:
+      <span class="variable">print</span>(<span class="string">&quot;Dress lightly.&quot;</span>);
+    <span class="keyword">case</span> <span class="string">&quot;cloudy&quot;</span>:
+      <span class="variable">print</span>(<span class="string">&quot;Go outside.&quot;</span>);
+      <span class="keyword">break</span>;
+    <span class="property">default</span>:
+      <span class="variable">print</span>(<span class="string">&quot;Unknown weather type: &quot;</span>, <span class="localvariable">weather</span>);
+      <span class="keyword">break</span>;
+  }
+}
+
+<span class="variable">weatherAdvice</span>(<span class="string">&quot;sunny&quot;</span>);</pre><p>Inside the block opened by <code>switch</code>, you can write a number of <code>case</code>
+labels. The program will jump to the label that corresponds to the
+value that <code>switch</code> was given (comparing the values with an equivalent
+of <code>===</code>, so without automatic type conversion), or to <code>default</code> if no
+matching value is found. Then it start executing statements there, and
+<em>continues</em> past other labels, until it reaches a <code>break</code> statement.
+In some cases, such as the <code>&quot;sunny&quot;</code> case in the example, this can be
+used to share some code between cases (it recommends going outside for
+both sunny and cloudy weather). Most of the time, this just adds a lot
+of ugly <code>break</code> statements, or causes problems when you forget to add
+one.</p><p>Like loops, <code>switch</code> statements can be given a label.</p></div><hr/><div class="block"><p>Finally, there is a keyword named <a name="key5"></a><code>with</code>. I've never actually <em>used</em>
+this in a real program, but I have seen other people use it, so it is
+useful to know what it is. Code using <code>with</code> looks like this:</p><pre class="code"><span class="keyword">var</span> <span class="variable">scope</span> = <span class="string">&quot;outside&quot;</span>;
+<span class="keyword">var</span> <span class="variable">object</span> = {<span class="property">name</span>: <span class="string">&quot;Ignatius&quot;</span>, <span class="property">scope</span>: <span class="string">&quot;inside&quot;</span>};
+<span class="keyword">with</span>(<span class="variable">object</span>) {
+  <span class="variable">print</span>(<span class="string">&quot;Name == &quot;</span>, <span class="variable">name</span>, <span class="string">&quot;, scope == &quot;</span>, <span class="variable">scope</span>);
+  <span class="variable">name</span> = <span class="string">&quot;Raoul&quot;</span>;
+  <span class="keyword">var</span> <span class="variable">newVariable</span> = <span class="atom">49</span>;
+}
+<span class="variable">show</span>(<span class="variable">object</span>.<span class="property">name</span>);
+<span class="variable">show</span>(<span class="variable">newVariable</span>);</pre><p>Inside the block, the properties of the object given to <code>with</code> act as
+variables. Newly introduced variables are <em>not</em> added as properties to
+this object though. I assume the idea behind this construct was that
+it could be useful in methods that make lots of use of the properties
+of their object. You could start such a method with <code>with(this)
+{...}</code>, and not have to write <code>this</code> all the time after that.</p></div><div class="navigation"><a href="chapter14.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="appendix2.html">Next chapter &gt;&gt;</a></div><div class="footer">© <a href="mailto:marijnh@gmail.com">Marijn Haverbeke</a> (<a href="http://creativecommons.org/licenses/by/3.0/">license</a>), written March to July 2007, last modified on April 4 2012.</div></div><script type="text/javascript" src="js/mochi.js"> </script><script type="text/javascript" src="js/codemirror.js"> </script><script type="text/javascript" src="js/ejs.js"> </script></body></html>

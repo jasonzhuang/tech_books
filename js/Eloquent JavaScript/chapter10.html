@@ -1,0 +1,203 @@
+<html><head><link rel="stylesheet" type="text/css" href="css/book.css"/><link rel="stylesheet" type="text/css" href="css/highlight.css"/><link rel="stylesheet" type="text/css" href="css/console.css"/><link rel="stylesheet" type="text/css" href="css/codemirror.css"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>Regular Expressions -- Eloquent JavaScript</title></head><body><script type="text/javascript" src="js/before.js"> </script><div class="content"><script type="text/javascript">var chapterTag = 'regexp';</script><div class="navigation"><a href="chapter9.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter11.html">Next chapter &gt;&gt;</a></div><h1><span class="number">Chapter 10: </span>Regular Expressions</h1><div class="block"><p>At various points in the previous chapters, we had to look for
+patterns in string values. In <a href="chapter4.html">chapter 4</a> we extracted date values from
+strings by writing out the precise positions at which the numbers that
+were part of the date could be found. Later, in <a href="chapter6.html">chapter 6</a>, we saw some
+particularly ugly pieces of code for finding certain types of
+characters in a string, for example the characters that had to be
+escaped in HTML output.</p><p><a name="key1"></a>Regular expressions are a language for describing
+patterns in strings. They form a small, separate language, which is
+embedded inside JavaScript (and in various other programming
+languages, in one way or another). It is not a very readable language
+― big regular expressions tend to be completely unreadable. But, it
+is a useful tool, and can really simplify string-processing programs.</p></div><hr/><div class="block"><p>Just like strings get written between quotes, regular expression
+patterns get written between slashes (<a name="key2"></a><code>/</code>). This means that slashes
+inside the expression have to be escaped.</p><pre class="code"><span class="keyword">var</span> <span class="variable">slash</span> = <span class="string">/\//</span>;
+<span class="variable">show</span>(<span class="string">&quot;AC/DC&quot;</span>.<span class="property">search</span>(<span class="variable">slash</span>));</pre><p>The <a name="key3"></a><code>search</code> method resembles <code>indexOf</code>, but it searches for a
+regular expression instead of a string. Patterns specified by regular
+expressions can do a few things that strings can not do. For a start,
+they allow some of their elements to match more than a single
+character. In <a href="chapter6.html">chapter 6</a>, when extracting mark-up from a document, we
+needed to find the first asterisk or opening brace in a string. That
+could be done like this:</p><pre class="code"><span class="keyword">var</span> <span class="variable">asteriskOrBrace</span> = <span class="string">/[\{\*]/</span>;
+<span class="keyword">var</span> <span class="variable">story</span> =
+  <span class="string">&quot;We noticed the *giant sloth*, hanging from a giant branch.&quot;</span>;
+<span class="variable">show</span>(<span class="variable">story</span>.<span class="property">search</span>(<span class="variable">asteriskOrBrace</span>));</pre><p>The <code>[</code> and <code>]</code> characters have a special meaning inside a regular
+expression. They can enclose a set of characters, and they mean 'any
+of these characters'. Most non-alphanumeric characters have some
+special meaning inside a regular expression, so it is a good idea to
+always escape them with a backslash<a class="footref" href="#footnote1">1</a> when you use them to refer to
+the actual characters.</p></div><hr/><div class="block"><p>There are a few shortcuts for sets of characters that are needed
+often. The dot (<code>.</code>) can be used to mean 'any character that is not a
+newline', an escaped 'd' (<code>\d</code>) means 'any digit', an escaped 'w'
+(<code>\w</code>) matches any alphanumeric character (including underscores, for
+some reason), and an escaped 's' (<code>\s</code>) matches any white-space (tab,
+newline, space) character.</p><pre class="code"><span class="keyword">var</span> <span class="variable">digitSurroundedBySpace</span> = <span class="string">/\s\d\s/</span>;
+<span class="variable">show</span>(<span class="string">&quot;1a 2 3d&quot;</span>.<span class="property">search</span>(<span class="variable">digitSurroundedBySpace</span>));</pre><p>The escaped 'd', 'w', and 's' can be replaced by their capital letter
+to mean their opposite. For example, <code>\S</code> matches any character that
+is <em>not</em> white-space. When using <code>[</code> and <code>]</code>, a pattern can be
+inverted by starting with a <code>^</code> character:</p><pre class="code"><span class="keyword">var</span> <span class="variable">notABC</span> = <span class="string">/[^ABC]/</span>;
+<span class="variable">show</span>(<span class="string">&quot;ABCBACCBBADABC&quot;</span>.<span class="property">search</span>(<span class="variable">notABC</span>));</pre><p>As you can see, the way regular expressions use characters to express
+patterns makes them A) very short, and B) very hard to read.</p></div><hr/><div class="block"><a name="exercise1"></a><div class="exercisenum">Ex. 10.1</div><div class="exercise"><p>Write a regular expression that matches a date in the format
+<code>&quot;XX/XX/XXXX&quot;</code>, where the <code>X</code>s are digits. Test it against the string
+<code>&quot;born 15/11/2003 (mother Spot): White Fang&quot;</code>.</p></div><div class="solution"><pre class="code"><span class="keyword">var</span> <span class="variable">datePattern</span> = <span class="string">/\d\d\/\d\d\/\d\d\d\d/</span>;
+<span class="variable">show</span>(<span class="string">&quot;born 15/11/2003 (mother Spot): White Fang&quot;</span>.<span class="property">search</span>(<span class="variable">datePattern</span>));</pre></div></div><hr/><div class="block"><p>Sometimes you need to make sure a pattern starts at the beginning of a
+string, or ends at its end. For this, the special characters <code>^</code> and
+<code>$</code> can be used. The first matches the start of the string, the second
+the end.</p><pre class="code"><span class="variable">show</span>(<span class="string">/a+/</span>.<span class="property">test</span>(<span class="string">&quot;blah&quot;</span>));
+<span class="variable">show</span>(<span class="string">/^a+$/</span>.<span class="property">test</span>(<span class="string">&quot;blah&quot;</span>));</pre><p>The first regular expression matches any string that contains an <code>a</code>
+character, the second only those strings that consist entirely of <code>a</code>
+characters.</p><p>Note that regular expressions are objects, and have methods. Their
+<a name="key4"></a><code>test</code> method returns a boolean indicating whether the given string
+matches the expression.</p><p>The code <code>\b</code> matches a 'word boundary', which can be punctuation,
+white-space, or the start or end of the string.</p><pre class="code"><span class="variable">show</span>(<span class="string">/cat/</span>.<span class="property">test</span>(<span class="string">&quot;concatenate&quot;</span>));
+<span class="variable">show</span>(<span class="string">/\bcat\b/</span>.<span class="property">test</span>(<span class="string">&quot;concatenate&quot;</span>));</pre></div><hr/><div class="block"><p>Parts of a pattern can be allowed to be repeated a number of times.
+Putting an asterisk (<code>*</code>) after an element allows it to be repeated
+any number of times, including zero. A plus (<code>+</code>) does the same, but
+requires the pattern to occur at least one time. A question mark (<code>?</code>)
+makes an element 'optional' ― it can occur zero or one times.</p><pre class="code"><span class="keyword">var</span> <span class="variable">parenthesizedText</span> = <span class="string">/\(.*\)/</span>;
+<span class="variable">show</span>(<span class="string">&quot;Its (the sloth's) claws were gigantic!&quot;</span>.<span class="property">search</span>(<span class="variable">parenthesizedText</span>));</pre><p>When necessary, braces can be used to be more precise about the amount
+of times an element may occur. A number between braces (<code>{4}</code>) gives
+the exact amount of times it must occur. Two numbers with a comma
+between them (<code>{3,10}</code>) indicate that the pattern must occur at least
+as often as the first number, and at most as often as the second one.
+Similarly, <code>{2,}</code> means two or more occurrences, while <code>{,4}</code> means
+four or less.</p><pre class="code"><span class="keyword">var</span> <span class="variable">datePattern</span> = <span class="string">/\d{1,2}\/\d\d?\/\d{4}/</span>;
+<span class="variable">show</span>(<span class="string">&quot;born 15/11/2003 (mother Spot): White Fang&quot;</span>.<span class="property">search</span>(<span class="variable">datePattern</span>));</pre><p>The pieces <code>/\d{1,2}/</code> and <code>/\d\d?/</code> both express 'one or two digits'.</p></div><hr/><div class="block"><a name="exercise2"></a><div class="exercisenum">Ex. 10.2</div><div class="exercise"><p>Write a pattern that matches e-mail addresses. For simplicity, assume
+that the parts before and after the <code>@</code> can contain only alphanumeric
+characters and the characters <code>.</code> and <code>-</code> (dot and dash), while the
+last part of the address, the country code after the last dot, may
+only contain alphanumeric characters, and must be two or three
+characters long.</p></div><div class="solution"><pre class="code"><span class="keyword">var</span> <span class="variable">mailAddress</span> = <span class="string">/\b[\w\.-]+@[\w\.-]+\.\w{2,3}\b/</span>;
+
+<span class="variable">show</span>(<span class="variable">mailAddress</span>.<span class="property">test</span>(<span class="string">&quot;kenny@test.net&quot;</span>));
+<span class="variable">show</span>(<span class="variable">mailAddress</span>.<span class="property">test</span>(<span class="string">&quot;I mailt kenny@tets.nets, but it didn wrok!&quot;</span>));
+<span class="variable">show</span>(<span class="variable">mailAddress</span>.<span class="property">test</span>(<span class="string">&quot;the_giant_sloth@gmail.com&quot;</span>));</pre><p>The <code>\b</code>s at the start and end of the pattern make sure that the
+second string does not match.</p></div></div><hr/><div class="block"><p>Part of a regular expression can be grouped together with parentheses.
+This allows us to use <code>*</code> and such on more than one character. For
+example:</p><pre class="code"><span class="keyword">var</span> <span class="variable">cartoonCrying</span> = <span class="string">/boo(hoo+)+/i</span>;
+<span class="variable">show</span>(<span class="string">&quot;Then, he exclaimed 'Boohoooohoohooo'&quot;</span>.<span class="property">search</span>(<span class="variable">cartoonCrying</span>));</pre><p>Where did the <code>i</code> at the end of that regular expression come from?
+After the closing slash, 'options' may be added to a regular
+expression. An <code>i</code>, here, means the expression is case-insensitive,
+which allows the lower-case B in the pattern to match the upper-case
+one in the string.</p><p>A pipe character (<code>|</code>) is used to allow a pattern to make a choice
+between two elements. For example:</p><pre class="code"><span class="keyword">var</span> <span class="variable">holyCow</span> = <span class="string">/(sacred|holy) (cow|bovine|bull|taurus)/i</span>;
+<span class="variable">show</span>(<span class="variable">holyCow</span>.<span class="property">test</span>(<span class="string">&quot;Sacred bovine!&quot;</span>));</pre></div><hr/><div class="block"><p>Often, looking for a pattern is just a first step in extracting
+something from a string. In previous chapters, this extraction was
+done by calling a string's <code>indexOf</code> and <code>slice</code> methods a lot. Now
+that we are aware of the existence of regular expressions, we can use
+the <code>match</code> method instead. When a string is matched against a regular
+expression, the result will be <code>null</code> if the match failed, or an array
+of matched strings if it succeeded.</p><pre class="code"><span class="variable">show</span>(<span class="string">&quot;No&quot;</span>.<span class="property">match</span>(<span class="string">/Yes/</span>));
+<span class="variable">show</span>(<span class="string">&quot;... yes&quot;</span>.<span class="property">match</span>(<span class="string">/yes/</span>));
+<span class="variable">show</span>(<span class="string">&quot;Giant Ape&quot;</span>.<span class="property">match</span>(<span class="string">/giant (\w+)/i</span>));</pre><p>The first element in the returned array is always the part of the
+string that matched the pattern. As the last example shows, when there
+are parenthesized parts in the pattern, the parts they match are also
+added to the array. Often, this makes extracting pieces of string very
+easy.</p><pre class="code"><span class="keyword">var</span> <span class="variable">parenthesized</span> = <span class="variable">prompt</span>(<span class="string">&quot;Tell me something&quot;</span>, <span class="string">&quot;&quot;</span>).<span class="property">match</span>(<span class="string">/\((.*)\)/</span>);
+<span class="keyword">if</span> (<span class="variable">parenthesized</span> != <span class="atom">null</span>)
+  <span class="variable">print</span>(<span class="string">&quot;You parenthesized '&quot;</span>, <span class="variable">parenthesized</span>[<span class="atom">1</span>], <span class="string">&quot;'&quot;</span>);</pre></div><hr/><div class="block"><a name="exercise3"></a><div class="exercisenum">Ex. 10.3</div><div class="exercise"><p>Re-write the function <code>extractDate</code> that we wrote in <a href="chapter4.html">chapter 4</a>. When
+given a string, this function looks for something that follows the
+date format we saw earlier. If it can find such a date, it puts the
+values into a <code>Date</code> object. Otherwise, it throws an exception. Make
+it accept dates in which the day or month are written with only one
+digit.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">extractDate</span>(<span class="variabledef">string</span>) {
+  <span class="keyword">var</span> <span class="variabledef">found</span> = <span class="localvariable">string</span>.<span class="property">match</span>(<span class="string">/(\d\d?)\/(\d\d?)\/(\d{4})/</span>);
+  <span class="keyword">if</span> (<span class="localvariable">found</span> == <span class="atom">null</span>)
+    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="variable">Error</span>(<span class="string">&quot;No date found in '&quot;</span> + <span class="localvariable">string</span> + <span class="string">&quot;'.&quot;</span>);
+  <span class="keyword">return</span> <span class="keyword">new</span> <span class="variable">Date</span>(<span class="variable">Number</span>(<span class="localvariable">found</span>[<span class="atom">3</span>]), <span class="variable">Number</span>(<span class="localvariable">found</span>[<span class="atom">2</span>]) - <span class="atom">1</span>,
+                  <span class="variable">Number</span>(<span class="localvariable">found</span>[<span class="atom">1</span>]));
+}
+
+<span class="variable">show</span>(<span class="variable">extractDate</span>(<span class="string">&quot;born 5/2/2007 (mother Noog): Long-ear Johnson&quot;</span>));</pre><p>This version is slightly longer than the previous one, but it has the
+advantage of actually checking what it is doing, and shouting out when
+it is given nonsensical input. This was a lot harder without regular
+expressions ― it would have taken a lot of calls to <code>indexOf</code> to find
+out whether the numbers had one or two digits, and whether the dashes
+were in the right places.</p></div></div><hr/><div class="block"><p>The <a name="key5"></a><code>replace</code> method of string values, which we saw in <a href="chapter6.html">chapter 6</a>, can be
+given a regular expression as its first argument.</p><pre class="code"><span class="variable">print</span>(<span class="string">&quot;Borobudur&quot;</span>.<span class="property">replace</span>(<span class="string">/[ou]/g</span>, <span class="string">&quot;a&quot;</span>));</pre><p>Notice the <code>g</code> character after the regular expression. It stands for
+'global', and means that every part of the string that matches the
+pattern should be replaced. When this <code>g</code> is omitted, only the first
+<code>&quot;o&quot;</code> would be replaced.</p><p>Sometimes it is necessary to keep parts of the replaced strings. For
+example, we have a big string containing the names of people, one name
+per line, in the format &quot;Lastname, Firstname&quot;. We want to swap these
+names, and remove the comma, to get a simple &quot;Firstname Lastname&quot;
+format.</p><pre class="code"><span class="keyword">var</span> <span class="variable">names</span> = <span class="string">&quot;Picasso, Pablo\nGauguin, Paul\nVan Gogh, Vincent&quot;</span>;
+<span class="variable">print</span>(<span class="variable">names</span>.<span class="property">replace</span>(<span class="string">/([\w ]+), ([\w ]+)/g</span>, <span class="string">&quot;$2 $1&quot;</span>));</pre><p>The <code>$1</code> and <code>$2</code> the replacement string refer to the parenthesized
+parts in the pattern. <code>$1</code> is replaced by the text that matched
+against the first pair of parentheses, <code>$2</code> by the second, and so on,
+up to <code>$9</code>.</p><p>If you have more than 9 parentheses parts in your pattern, this will
+no longer work. But there is one more way to replace pieces of a
+string, which can also be useful in some other tricky situations. When
+the second argument given to the <code>replace</code> method is a function value
+instead of a string, this function is called every time a match is
+found, and the matched text is replaced by whatever the function
+returns. The arguments given to the function are the matched elements,
+similar to the values found in the arrays returned by <code>match</code>: The
+first one is the whole match, and after that comes one argument for
+every parenthesized part of the pattern.</p><pre class="code"><span class="keyword">function</span> <span class="variable">eatOne</span>(<span class="variabledef">match</span>, <span class="variabledef">amount</span>, <span class="variabledef">unit</span>) {
+  <span class="localvariable">amount</span> = <span class="variable">Number</span>(<span class="localvariable">amount</span>) - <span class="atom">1</span>;
+  <span class="keyword">if</span> (<span class="localvariable">amount</span> == <span class="atom">1</span>) {
+    <span class="localvariable">unit</span> = <span class="localvariable">unit</span>.<span class="property">slice</span>(<span class="atom">0</span>, <span class="localvariable">unit</span>.<span class="property">length</span> - <span class="atom">1</span>);
+  }
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">amount</span> == <span class="atom">0</span>) {
+    <span class="localvariable">unit</span> = <span class="localvariable">unit</span> + <span class="string">&quot;s&quot;</span>;
+    <span class="localvariable">amount</span> = <span class="string">&quot;no&quot;</span>;
+  }
+  <span class="keyword">return</span> <span class="localvariable">amount</span> + <span class="string">&quot; &quot;</span> + <span class="localvariable">unit</span>;
+}
+
+<span class="keyword">var</span> <span class="variable">stock</span> = <span class="string">&quot;1 lemon, 2 cabbages, and 101 eggs&quot;</span>;
+<span class="variable">stock</span> = <span class="variable">stock</span>.<span class="property">replace</span>(<span class="string">/(\d+) (\w+)/g</span>, <span class="variable">eatOne</span>);
+
+<span class="variable">print</span>(<span class="variable">stock</span>);</pre></div><hr/><div class="block"><a name="exercise4"></a><div class="exercisenum">Ex. 10.4</div><div class="exercise"><p>That last trick can be used to make the HTML-escaper from <a href="chapter6.html">chapter 6</a> more
+efficient. You may remember that it looked like this: </p><pre class="code"><span class="keyword">function</span> <span class="variable">escapeHTML</span>(<span class="variabledef">text</span>) {
+  <span class="keyword">var</span> <span class="variabledef">replacements</span> = [[<span class="string">&quot;&amp;&quot;</span>, <span class="string">&quot;&amp;amp;&quot;</span>], [<span class="string">&quot;\&quot;&quot;</span>, <span class="string">&quot;&amp;quot;&quot;</span>],
+                      [<span class="string">&quot;&lt;&quot;</span>, <span class="string">&quot;&amp;lt;&quot;</span>], [<span class="string">&quot;&gt;&quot;</span>, <span class="string">&quot;&amp;gt;&quot;</span>]];
+  <span class="variable">forEach</span>(<span class="localvariable">replacements</span>, <span class="keyword">function</span>(<span class="variabledef">replace</span>) {
+    <span class="localvariable">text</span> = <span class="localvariable">text</span>.<span class="property">replace</span>(<span class="localvariable">replace</span>[<span class="atom">0</span>], <span class="localvariable">replace</span>[<span class="atom">1</span>]);
+  });
+  <span class="keyword">return</span> <span class="localvariable">text</span>;
+}</pre><p>Write a new function <code>escapeHTML</code>, which does the same thing, but only
+calls <code>replace</code> once.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">escapeHTML</span>(<span class="variabledef">text</span>) {
+  <span class="keyword">var</span> <span class="variabledef">replacements</span> = {<span class="string">&quot;&lt;&quot;</span>: <span class="string">&quot;&amp;lt;&quot;</span>, <span class="string">&quot;&gt;&quot;</span>: <span class="string">&quot;&amp;gt;&quot;</span>,
+                      <span class="string">&quot;&amp;&quot;</span>: <span class="string">&quot;&amp;amp;&quot;</span>, <span class="string">&quot;\&quot;&quot;</span>: <span class="string">&quot;&amp;quot;&quot;</span>};
+  <span class="keyword">return</span> <span class="localvariable">text</span>.<span class="property">replace</span>(<span class="string">/[&lt;&gt;&amp;&quot;]/g</span>, <span class="keyword">function</span>(<span class="variabledef">character</span>) {
+    <span class="keyword">return</span> <span class="localvariable">replacements</span>[<span class="localvariable">character</span>];
+  });
+}
+
+<span class="variable">print</span>(<span class="variable">escapeHTML</span>(<span class="string">&quot;The 'pre-formatted' tag is written \&quot;&lt;pre&gt;\&quot;.&quot;</span>));</pre><p>The <code>replacements</code> object is a quick way to associate each character
+with its escaped version. Using it like this is safe (i.e. no
+<code>Dictionary</code> object is needed), because the only properties that will
+be used are those matched by the <code>/[&lt;&gt;&amp;&quot;]/</code> expression.</p></div></div><hr/><div class="block"><p>There are cases where the pattern you need to match against is not
+known while you are writing the code. Say we are writing a (very
+simple-minded) obscenity filter for a message board. We only want to
+allow messages that do not contain obscene words. The administrator of
+the board can specify a list of words that he or she considers
+unacceptable.</p><p>The most efficient way to check a piece of text for a set of words is
+to use a regular expression. If we have our word list as an array, we
+can build the regular expression like this:</p><pre class="code"><span class="keyword">var</span> <span class="variable">badWords</span> = [<span class="string">&quot;ape&quot;</span>, <span class="string">&quot;monkey&quot;</span>, <span class="string">&quot;simian&quot;</span>, <span class="string">&quot;gorilla&quot;</span>, <span class="string">&quot;evolution&quot;</span>];
+<span class="keyword">var</span> <span class="variable">pattern</span> = <span class="keyword">new</span> <span class="variable">RegExp</span>(<span class="variable">badWords</span>.<span class="property">join</span>(<span class="string">&quot;|&quot;</span>), <span class="string">&quot;i&quot;</span>);
+<span class="keyword">function</span> <span class="variable">isAcceptable</span>(<span class="variabledef">text</span>) {
+  <span class="keyword">return</span> !<span class="variable">pattern</span>.<span class="property">test</span>(<span class="localvariable">text</span>);
+}
+
+<span class="variable">show</span>(<span class="variable">isAcceptable</span>(<span class="string">&quot;Mmmm, grapes.&quot;</span>));
+<span class="variable">show</span>(<span class="variable">isAcceptable</span>(<span class="string">&quot;No more of that monkeybusiness, now.&quot;</span>));</pre><p>We could add <code>\b</code> patterns around the words, so that the thing about
+grapes would not be classified as unacceptable. That would also make
+the second one acceptable, though, which is probably not correct.
+Obscenity filters are hard to get right (and usually way too annoying
+to be a good idea).</p><p>The first argument to the <a name="key6"></a><code>RegExp</code> constructor is a string
+containing the pattern, the second argument can be used to add
+case-insensitivity or globalness. When building a string to hold the
+pattern, you have to be careful with backslashes. Because, normally,
+backslashes are removed when a string is interpreted, any backslashes
+that must end up in the regular expression itself have to be escaped:</p><pre class="code"><span class="keyword">var</span> <span class="variable">digits</span> = <span class="keyword">new</span> <span class="variable">RegExp</span>(<span class="string">&quot;\\d+&quot;</span>);
+<span class="variable">show</span>(<span class="variable">digits</span>.<span class="property">test</span>(<span class="string">&quot;101&quot;</span>));</pre></div><hr/><div class="block"><p>The most important thing to know about regular expressions is that
+they exist, and can greatly enhance the power of your string-mangling
+code. They are so cryptic that you'll probably have to look up the
+details on them the first ten times you want to make use of them.
+Persevere, and you will soon be off-handedly writing expressions that
+look like occult gibberish</p><div class="illustration"><img src="img/xkcd_regular_expressions.png"/></div><p>(Comic by <a href="http://xkcd.com">Randall Munroe</a>.)</p></div><ol class="footnotes"><li><a name="footnote1"></a>In this case, the backslashes were not really necessary, because
+the characters occur between <code>[</code> and <code>]</code>, but it is easier to just
+escape them anyway, so you won't have to think about it.</li></ol><div class="navigation"><a href="chapter9.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter11.html">Next chapter &gt;&gt;</a></div><div class="footer">© <a href="mailto:marijnh@gmail.com">Marijn Haverbeke</a> (<a href="http://creativecommons.org/licenses/by/3.0/">license</a>), written March to July 2007, last modified on April 4 2012.</div></div><script type="text/javascript" src="js/mochi.js"> </script><script type="text/javascript" src="js/codemirror.js"> </script><script type="text/javascript" src="js/ejs.js"> </script></body></html>

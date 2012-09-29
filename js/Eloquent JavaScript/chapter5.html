@@ -1,0 +1,213 @@
+<html><head><link rel="stylesheet" type="text/css" href="css/book.css"/><link rel="stylesheet" type="text/css" href="css/highlight.css"/><link rel="stylesheet" type="text/css" href="css/console.css"/><link rel="stylesheet" type="text/css" href="css/codemirror.css"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>Error Handling -- Eloquent JavaScript</title></head><body><script type="text/javascript" src="js/before.js"> </script><div class="content"><script type="text/javascript">var chapterTag = 'error';</script><div class="navigation"><a href="chapter4.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter6.html">Next chapter &gt;&gt;</a></div><h1><span class="number">Chapter 5: </span>Error Handling</h1><div class="block"><p>Writing programs that work when everything goes as expected is a good
+start. Making your programs behave properly when encountering
+unexpected conditions is where it really gets challenging.</p><p>The problematic situations that a program can encounter fall into two
+categories: Programmer mistakes and genuine problems. If someone
+forgets to pass a required argument to a function, that is an example
+of the first kind of problem. On the other hand, if a program asks the
+user to enter a name and it gets back an empty string, that is
+something the programmer can not prevent.</p><p>In general, one deals with programmer errors by finding and fixing
+them, and with genuine errors by having the code check for them and
+perform some suitable action to remedy them (for example, asking for
+the name again), or at least fail in a well-defined and clean way.</p></div><hr/><div class="block"><p>It is important to decide into which of these categories a certain
+problem falls. For example, consider our old <code>power</code> function:</p><pre class="code"><span class="keyword">function</span> <span class="variable">power</span>(<span class="variabledef">base</span>, <span class="variabledef">exponent</span>) {
+  <span class="keyword">var</span> <span class="variabledef">result</span> = <span class="atom">1</span>;
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">count</span> = <span class="atom">0</span>; <span class="localvariable">count</span> &lt; <span class="localvariable">exponent</span>; <span class="localvariable">count</span>++)
+    <span class="localvariable">result</span> *= <span class="localvariable">base</span>;
+  <span class="keyword">return</span> <span class="localvariable">result</span>;
+}</pre><p>When some geek tries to call <code>power(&quot;Rabbit&quot;, 4)</code>, that is quite
+obviously a programmer error, but how about <code>power(9, 0.5)</code>? The
+function can not handle fractional exponents, but, mathematically
+speaking, raising a number to the halfth power is perfectly reasonable
+(<a name="key1"></a><code>Math.pow</code> can handle it). In situations where it is not entirely
+clear what kind of input a function accepts, it is often a good idea
+to explicitly state the kind of arguments that are acceptable in a
+comment.</p></div><hr/><div class="block"><p>If a function encounters a problem that it can not solve itself, what
+should it do? In <a href="chapter4.html">chapter 4</a> we wrote the function <code>between</code>:</p><pre class="code"><span class="keyword">function</span> <span class="variable">between</span>(<span class="variabledef">string</span>, <span class="variabledef">start</span>, <span class="variabledef">end</span>) {
+  <span class="keyword">var</span> <span class="variabledef">startAt</span> = <span class="localvariable">string</span>.<span class="property">indexOf</span>(<span class="localvariable">start</span>) + <span class="localvariable">start</span>.<span class="property">length</span>;
+  <span class="keyword">var</span> <span class="variabledef">endAt</span> = <span class="localvariable">string</span>.<span class="property">indexOf</span>(<span class="localvariable">end</span>, <span class="localvariable">startAt</span>);
+  <span class="keyword">return</span> <span class="localvariable">string</span>.<span class="property">slice</span>(<span class="localvariable">startAt</span>, <span class="localvariable">endAt</span>);
+}</pre><p>If the given <code>start</code> and <code>end</code> do not occur in the string, <code>indexOf</code>
+will return <code>-1</code> and this version of <code>between</code> will return a lot of
+nonsense: <code>between(&quot;Your mother!&quot;, &quot;{-&quot;, &quot;-}&quot;)</code> returns <code>&quot;our mother&quot;</code>.</p><p>When the program is running, and the function is called like that, the
+code that called it will get a string value, as it expected, and
+happily continue doing something with it. But the value is wrong, so
+whatever it ends up doing with it will also be wrong. And if you are
+unlucky, this wrongness only causes a problem after having passed
+through twenty other functions. In cases like that, it is extremely
+hard to find out where the problem started.</p><p>In some cases, you will be so unconcerned about these problems that
+you don't mind the function misbehaving when given incorrect input.
+For example, if you know for sure the function will only be called
+from a few places, and you can prove that these places give it decent
+input, it is generally not worth the trouble to make the function
+bigger and uglier so that it can handle problematic cases.</p><p>But most of the time, functions that fail 'silently' are hard to use,
+and even dangerous. What if the code calling <code>between</code> wants to know
+whether everything went well? At the moment, it can not tell, except
+by re-doing all the work that <code>between</code> did and checking the result of
+<code>between</code> with its own result. That is bad. One solution is to make
+<code>between</code> return a special value, such as <code>false</code> or <code>undefined</code>, when
+it fails.</p><pre class="code"><span class="keyword">function</span> <span class="variable">between</span>(<span class="variabledef">string</span>, <span class="variabledef">start</span>, <span class="variabledef">end</span>) {
+  <span class="keyword">var</span> <span class="variabledef">startAt</span> = <span class="localvariable">string</span>.<span class="property">indexOf</span>(<span class="localvariable">start</span>);
+  <span class="keyword">if</span> (<span class="localvariable">startAt</span> == -<span class="atom">1</span>)
+    <span class="keyword">return</span> <span class="atom">undefined</span>;
+  <span class="localvariable">startAt</span> += <span class="localvariable">start</span>.<span class="property">length</span>;
+  <span class="keyword">var</span> <span class="variabledef">endAt</span> = <span class="localvariable">string</span>.<span class="property">indexOf</span>(<span class="localvariable">end</span>, <span class="localvariable">startAt</span>);
+  <span class="keyword">if</span> (<span class="localvariable">endAt</span> == -<span class="atom">1</span>)
+    <span class="keyword">return</span> <span class="atom">undefined</span>;
+
+  <span class="keyword">return</span> <span class="localvariable">string</span>.<span class="property">slice</span>(<span class="localvariable">startAt</span>, <span class="localvariable">endAt</span>);
+}</pre><p>You can see that error checking does not generally make functions
+prettier. But now code that calls <code>between</code> can do something like:</p><pre class="code"><span class="keyword">var</span> <span class="variable">input</span> = <span class="variable">prompt</span>(<span class="string">&quot;Tell me something&quot;</span>, <span class="string">&quot;&quot;</span>);
+<span class="keyword">var</span> <span class="variable">parenthesized</span> = <span class="variable">between</span>(<span class="variable">input</span>, <span class="string">&quot;(&quot;</span>, <span class="string">&quot;)&quot;</span>);
+<span class="keyword">if</span> (<span class="variable">parenthesized</span> != <span class="atom">undefined</span>)
+  <span class="variable">print</span>(<span class="string">&quot;You parenthesized '&quot;</span>, <span class="variable">parenthesized</span>, <span class="string">&quot;'.&quot;</span>);</pre></div><hr/><div class="block"><p>In many cases returning a special value is a perfectly fine way to
+indicate an error. It does, however, have its downsides. Firstly, what
+if the function can already return every possible kind of value? For
+example, consider this function that gets the last element from an
+array:</p><pre class="code"><span class="keyword">function</span> <span class="variable">lastElement</span>(<span class="variabledef">array</span>) {
+  <span class="keyword">if</span> (<span class="localvariable">array</span>.<span class="property">length</span> &gt; <span class="atom">0</span>)
+    <span class="keyword">return</span> <span class="localvariable">array</span>[<span class="localvariable">array</span>.<span class="property">length</span> - <span class="atom">1</span>];
+  <span class="keyword">else</span>
+    <span class="keyword">return</span> <span class="atom">undefined</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">lastElement</span>([<span class="atom">1</span>, <span class="atom">2</span>, <span class="atom">undefined</span>]));</pre><p>So did the array have a last element? Looking at the value
+<code>lastElement</code> returns, it is impossible to say.</p><p>The second issue with returning special values is that it can
+sometimes lead to a whole lot of clutter. If a piece of code calls
+<code>between</code> ten times, it has to check ten times whether <code>undefined</code> was
+returned. Also, if a function calls <code>between</code> but does not have a
+strategy to recover from a failure, it will have to check the return
+value of <code>between</code>, and if it is <code>undefined</code>, this function can then
+return <code>undefined</code> or some other special value to its caller, who in
+turn also checks for this value.</p><p>Sometimes, when something strange occurs, it would be practical to
+just stop doing what we are doing and immediately jump back to a place
+that knows how to handle the problem.</p><p>Well, we are in luck, a lot of programming languages provide such a
+thing. Usually, it is called <a name="key2"></a>exception handling.</p></div><hr/><div class="block"><p>The theory behind exception handling goes like this: It is possible
+for code to <a name="key3"></a>raise (or <a name="key4"></a>throw) an <a name="key5"></a>exception, which is a value.
+Raising an exception somewhat resembles a super-charged return from a
+function ― it does not just jump out of the current function, but
+also out of its callers, all the way up to the top-level call that
+started the current execution. This is called <a name="key6"></a>unwinding the stack.
+You may remember the <a name="key7"></a>stack of function calls that was mentioned in
+<a href="chapter3.html">chapter 3</a>. An exception zooms down this stack, throwing away all
+the call contexts it encounters.</p><p>If they always zoomed right down to the base of the stack, exceptions
+would not be of much use, they would just provide a novel way to blow
+up your program. Fortunately, it is possible to set obstacles for
+exceptions along the stack. These '<a name="key8"></a>catch' the exception as it is
+zooming down, and can do something with it, after which the program
+continues running at the point where the exception was caught.</p><p>An example:</p><pre class="code"><span class="keyword">function</span> <span class="variable">lastElement</span>(<span class="variabledef">array</span>) {
+  <span class="keyword">if</span> (<span class="localvariable">array</span>.<span class="property">length</span> &gt; <span class="atom">0</span>)
+    <span class="keyword">return</span> <span class="localvariable">array</span>[<span class="localvariable">array</span>.<span class="property">length</span> - <span class="atom">1</span>];
+  <span class="keyword">else</span>
+    <span class="keyword">throw</span> <span class="string">&quot;Can not take the last element of an empty array.&quot;</span>;
+}
+
+<span class="keyword">function</span> <span class="variable">lastElementPlusTen</span>(<span class="variabledef">array</span>) {
+  <span class="keyword">return</span> <span class="variable">lastElement</span>(<span class="localvariable">array</span>) + <span class="atom">10</span>;
+}
+
+<span class="keyword">try</span> {
+  <span class="variable">print</span>(<span class="variable">lastElementPlusTen</span>([]));
+}
+<span class="keyword">catch</span> (<span class="variabledef">error</span>) {
+  <span class="variable">print</span>(<span class="string">&quot;Something went wrong: &quot;</span>, <span class="localvariable">error</span>);
+}</pre><p><a name="key9"></a><code>throw</code> is the keyword that is used to raise an exception. The
+keyword <a name="key10"></a><code>try</code> sets up an obstacle for exceptions: When the code in
+the block after it raises an exception, the <a name="key11"></a><code>catch</code> block will be
+executed. The variable named in parentheses after the word <code>catch</code> is
+the name given to the exception value inside this block.</p><p>Note that the function <code>lastElementPlusTen</code> completely ignores the
+possibility that <code>lastElement</code> might go wrong. This is the big
+advantage of exceptions ― error-handling code is only necessary at
+the point where the error occurs, and the point where it is handled.
+The functions in between can forget all about it.</p><p>Well, almost.</p></div><hr/><div class="block"><p>Consider the following: A function <code>processThing</code> wants to set a
+top-level variable <code>currentThing</code> to point to a specific thing while
+its body executes, so that other functions can have access to that
+thing too. Normally you would of course just pass the thing as an
+argument, but assume for a moment that that is not practical. When the
+function finishes, <code>currentThing</code> should be set back to <code>null</code>.</p><pre class="code"><span class="keyword">var</span> <span class="variable">currentThing</span> = <span class="atom">null</span>;
+
+<span class="keyword">function</span> <span class="variable">processThing</span>(<span class="variabledef">thing</span>) {
+  <span class="keyword">if</span> (<span class="variable">currentThing</span> != <span class="atom">null</span>)
+    <span class="keyword">throw</span> <span class="string">&quot;Oh no! We are already processing a thing!&quot;</span>;
+
+  <span class="variable">currentThing</span> = <span class="localvariable">thing</span>;
+  <span class="comment">/* do complicated processing... */</span>
+  <span class="variable">currentThing</span> = <span class="atom">null</span>;
+}</pre><p>But what if the complicated processing raises an exception? In that
+case the call to <code>processThing</code> will be thrown off the stack by the
+exception, and <code>currentThing</code> will never be reset to <code>null</code>.</p><p><code>try</code> statements can also be followed by a <a name="key12"></a><code>finally</code> keyword, which
+means 'no matter <em>what</em> happens, run this code after trying to run the
+code in the <code>try</code> block'. If a function has to clean something up, the
+cleanup code should usually be put into a <code>finally</code> block:</p><pre class="code"><span class="keyword">function</span> <span class="variable">processThing</span>(<span class="variabledef">thing</span>) {
+  <span class="keyword">if</span> (<span class="variable">currentThing</span> != <span class="atom">null</span>)
+    <span class="keyword">throw</span> <span class="string">&quot;Oh no! We are already processing a thing!&quot;</span>;
+
+  <span class="variable">currentThing</span> = <span class="localvariable">thing</span>;
+  <span class="keyword">try</span> {
+    <span class="comment">/* do complicated processing... */</span>
+  }
+  <span class="keyword">finally</span> {
+    <span class="variable">currentThing</span> = <span class="atom">null</span>;
+  }
+}</pre></div><hr/><div class="block"><p>A lot of errors in programs cause the JavaScript environment to raise
+an exception. For example:</p><pre class="code"><span class="keyword">try</span> {
+  <span class="variable">print</span>(<span class="variable">Sasquatch</span>);
+}
+<span class="keyword">catch</span> (<span class="variabledef">error</span>) {
+  <span class="variable">print</span>(<span class="string">&quot;Caught: &quot;</span> + <span class="localvariable">error</span>.<span class="property">message</span>);
+}</pre><p>In cases like this, special error objects are raised. These always
+have a <code>message</code> property containing a description of the problem. You
+can raise similar objects using the <code>new</code> keyword and the <a name="key13"></a><code>Error</code>
+constructor:</p><pre class="code"><span class="keyword">throw</span> <span class="keyword">new</span> <span class="variable">Error</span>(<span class="string">&quot;Fire!&quot;</span>);</pre></div><hr/><div class="block"><p>When an exception goes all the way to the bottom of the stack without
+being caught, it gets handled by the environment. What this means
+differs between the different browsers, sometimes a description of the
+error is written to some kind of log, sometimes a window pops up
+describing the error.</p><p>The errors produced by entering code in the console on this page are
+always caught by the console, and displayed among the other output.</p></div><hr/><div class="block"><p>Most programmers consider exceptions purely an error-handling
+mechanism. In essence, though, they are just another way of
+influencing the control flow of a program. For example, they can be
+used as a kind of <code>break</code> statement in a recursive function. Here is a
+slightly strange function which determines whether an object, and the
+objects stored inside it, contain at least seven <code>true</code> values:</p><pre class="code"><span class="keyword">var</span> <span class="variable">FoundSeven</span> = {};
+
+<span class="keyword">function</span> <span class="variable">hasSevenTruths</span>(<span class="variabledef">object</span>) {
+  <span class="keyword">var</span> <span class="variabledef">counted</span> = <span class="atom">0</span>;
+
+  <span class="keyword">function</span> <span class="variabledef">count</span>(<span class="variabledef">object</span>) {
+    <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">name</span> <span class="keyword">in</span> <span class="localvariable">object</span>) {
+      <span class="keyword">if</span> (<span class="localvariable">object</span>[<span class="localvariable">name</span>] === <span class="atom">true</span>) {
+        <span class="localvariable">counted</span>++;
+        <span class="keyword">if</span> (<span class="localvariable">counted</span> == <span class="atom">7</span>)
+          <span class="keyword">throw</span> <span class="variable">FoundSeven</span>;
+      }
+      <span class="keyword">else</span> <span class="keyword">if</span> (typeof <span class="localvariable">object</span>[<span class="localvariable">name</span>] == <span class="string">&quot;object&quot;</span>) {
+        <span class="localvariable">count</span>(<span class="localvariable">object</span>[<span class="localvariable">name</span>]);
+      }
+    }
+  }
+
+  <span class="keyword">try</span> {
+    <span class="localvariable">count</span>(<span class="localvariable">object</span>);
+    <span class="keyword">return</span> <span class="atom">false</span>;
+  }
+  <span class="keyword">catch</span> (<span class="variabledef">exception</span>) {
+    <span class="keyword">if</span> (<span class="localvariable">exception</span> != <span class="variable">FoundSeven</span>)
+      <span class="keyword">throw</span> <span class="localvariable">exception</span>;
+    <span class="keyword">return</span> <span class="atom">true</span>;
+  }
+}</pre><p>The inner function <code>count</code> is recursively called for every object that
+is part of the argument. When the variable <code>counted</code> reaches seven,
+there is no point in continuing to count, but just returning from the
+current call to <code>count</code> will not necessarily stop the counting, since
+there might be more calls below it. So what we do is just throw a
+value, which will cause the control to jump right out of any calls to
+<code>count</code>, and land at the <code>catch</code> block.</p><p>But just returning <code>true</code> in case of an exception is not correct.
+Something else might be going wrong, so we first check whether the
+exception is the object <code>FoundSeven</code>, created specifically for this
+purpose. If it is not, this <code>catch</code> block does not know how to handle
+it, so it raises it again.</p><p>This is a pattern that is also common when dealing with error
+conditions ― you have to make sure that your <code>catch</code> block only
+handles exceptions that it knows how to handle. Throwing string
+values, as some of the examples in this chapter do, is rarely a good
+idea, because it makes it hard to recognise the type of the exception.
+A better idea is to use unique values, such as the <code>FoundSeven</code>
+object, or to introduce a new type of objects, as described in <a href="chapter8.html">chapter 8</a>.</p></div><div class="navigation"><a href="chapter4.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter6.html">Next chapter &gt;&gt;</a></div><div class="footer">© <a href="mailto:marijnh@gmail.com">Marijn Haverbeke</a> (<a href="http://creativecommons.org/licenses/by/3.0/">license</a>), written March to July 2007, last modified on April 4 2012.</div></div><script type="text/javascript" src="js/mochi.js"> </script><script type="text/javascript" src="js/codemirror.js"> </script><script type="text/javascript" src="js/ejs.js"> </script></body></html>

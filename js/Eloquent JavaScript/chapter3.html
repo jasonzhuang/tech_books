@@ -1,0 +1,345 @@
+<html><head><link rel="stylesheet" type="text/css" href="css/book.css"/><link rel="stylesheet" type="text/css" href="css/highlight.css"/><link rel="stylesheet" type="text/css" href="css/console.css"/><link rel="stylesheet" type="text/css" href="css/codemirror.css"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>Functions -- Eloquent JavaScript</title></head><body><script type="text/javascript" src="js/before.js"> </script><div class="content"><script type="text/javascript">var chapterTag = 'functions';</script><div class="navigation"><a href="chapter2.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter4.html">Next chapter &gt;&gt;</a></div><h1><span class="number">Chapter 3: </span>Functions</h1><div class="block"><p>A program often needs to do the same thing in different places.
+Repeating all the necessary statements every time is tedious and
+error-prone. It would be better to put them in one place, and have the
+program take a detour through there whenever necessary. This is what
+<a name="key1"></a>functions were invented for: They are canned code that a program can
+go through whenever it wants. Putting a string on the screen requires
+quite a few statements, but when we have a <code>print</code> function we can
+just write <code>print(&quot;Aleph&quot;)</code> and be done with it.</p><p>To view functions merely as canned chunks of code doesn't do them
+justice though. When needed, they can play the role of pure functions,
+algorithms, indirections, abstractions, decisions, modules,
+continuations, data structures, and more. Being able to effectively
+use functions is a necessary skill for any kind of serious
+programming. This chapter provides an introduction into the subject,
+<a href="chapter6.html">chapter 6</a> discusses the subtleties of functions in more depth.</p></div><hr/><div class="block"><p><a name="key2"></a>Pure functions, for a start, are the things that were
+called functions in the mathematics classes that I hope you have been
+subjected to at some point in your life. Taking the cosine or the
+absolute value of a number is a pure function of one argument.
+Addition is a pure function of two arguments.</p><p>The defining properties of pure functions are that they always return
+the same value when given the same arguments, and never have side
+effects. They take some arguments, return a value based on these
+arguments, and do not monkey around with anything else.</p><p>In JavaScript, addition is an operator, but it could be wrapped in a
+function like this (and as pointless as this looks, we will come
+across situations where it is actually useful):</p><pre class="code"><span class="keyword">function</span> <span class="variable">add</span>(<span class="variabledef">a</span>, <span class="variabledef">b</span>) {
+  <span class="keyword">return</span> <span class="localvariable">a</span> + <span class="localvariable">b</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">add</span>(<span class="atom">2</span>, <span class="atom">2</span>));</pre><p><code>add</code> is the name of the function. <code>a</code> and <code>b</code> are the names of the
+two arguments. <code>return a + b;</code> is the body of the function.</p><p>The keyword <a name="key3"></a><code>function</code> is always used when creating a new function.
+When it is followed by a variable name, the resulting function will be
+stored under this name. After the name comes a list of <a name="key4"></a>argument
+names, and then finally the <a name="key5"></a>body of the function. Unlike those
+around the body of <code>while</code> loops or <code>if</code> statements, the braces around
+a function body are obligatory<a class="footref" href="#footnote1">1</a>.</p><p>The keyword <a name="key6"></a><code>return</code>, followed by an expression, is used to
+determine the value the function returns. When control comes across a
+<code>return</code> statement, it immediately jumps out of the current function
+and gives the returned value to the code that called the function. A
+<code>return</code> statement without an expression after it will cause the
+function to return <code>undefined</code>.</p><p>A body can, of course, have more than one statement in it. Here is a
+function for computing powers (with positive, integer exponents):</p><pre class="code"><span class="keyword">function</span> <span class="variable">power</span>(<span class="variabledef">base</span>, <span class="variabledef">exponent</span>) {
+  <span class="keyword">var</span> <span class="variabledef">result</span> = <span class="atom">1</span>;
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">count</span> = <span class="atom">0</span>; <span class="localvariable">count</span> &lt; <span class="localvariable">exponent</span>; <span class="localvariable">count</span>++)
+    <span class="localvariable">result</span> *= <span class="localvariable">base</span>;
+  <span class="keyword">return</span> <span class="localvariable">result</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">power</span>(<span class="atom">2</span>, <span class="atom">10</span>));</pre><p>If you solved <a href="chapter2.html#exercise2">exercise 2.2</a>, this technique for computing a power should
+look familiar.</p><p>Creating a variable (<code>result</code>) and updating it are side effects.
+Didn't I just say pure functions had no side effects?</p><p>A variable created inside a function exists only inside the function.
+This is fortunate, or a programmer would have to come up with a
+different name for every variable he needs throughout a program.
+Because <code>result</code> only exists inside <code>power</code>, the changes to it only
+last until the function returns, and from the perspective of code that
+calls it there are no side effects.</p></div><hr/><div class="block"><a name="exercise1"></a><div class="exercisenum">Ex. 3.1</div><div class="exercise"><p>Write a function called <code>absolute</code>, which returns the absolute value
+of the number it is given as its argument. The absolute value of a
+negative number is the positive version of that same number, and the
+absolute value of a positive number (or zero) is that number itself.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">absolute</span>(<span class="variabledef">number</span>) {
+  <span class="keyword">if</span> (<span class="localvariable">number</span> &lt; <span class="atom">0</span>)
+    <span class="keyword">return</span> -<span class="localvariable">number</span>;
+  <span class="keyword">else</span>
+    <span class="keyword">return</span> <span class="localvariable">number</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">absolute</span>(-<span class="atom">144</span>));</pre></div></div><hr/><div class="block"><p>Pure functions have two very nice properties. They are easy to think
+about, and they are easy to re-use.</p><p>If a function is pure, a call to it can be seen as a thing in itself.
+When you are not sure that it is working correctly, you can test it by
+calling it directly from the console, which is simple because it does
+not depend on any context<a class="footref" href="#footnote2">2</a>. It is easy to make these tests automatic
+― to write a program that tests a specific function. Non-pure
+functions might return different values based on all kinds of factors,
+and have side effects that might be hard to test and think about.</p><p>Because pure functions are self-sufficient, they are likely to be
+useful and relevant in a wider range of situations than non-pure ones.
+Take <code>show</code>, for example. This function's usefulness depends on the
+presence of a special place on the screen for printing output. If that
+place is not there, the function is useless. We can imagine a related
+function, let's call it <code>format</code>, that takes a value as an argument
+and returns a string that represents this value. This function is
+useful in more situations than <code>show</code>.</p><p>Of course, <code>format</code> does not solve the same problem as <code>show</code>, and no
+pure function is going to be able to solve that problem, because it
+requires a side effect. In many cases, non-pure functions are
+precisely what you need. In other cases, a problem can be solved with
+a pure function but the non-pure variant is much more convenient or
+efficient.</p><p>Thus, when something can easily be expressed as a pure function, write
+it that way. But never feel dirty for writing non-pure functions.</p></div><hr/><div class="block"><p>Functions with side effects do not have to contain a <code>return</code>
+statement. If no <code>return</code> statement is encountered, the function
+returns <code>undefined</code>.</p><pre class="code"><span class="keyword">function</span> <span class="variable">yell</span>(<span class="variabledef">message</span>) {
+  <span class="variable">alert</span>(<span class="localvariable">message</span> + <span class="string">&quot;!!&quot;</span>);
+}
+
+<span class="variable">yell</span>(<span class="string">&quot;Yow&quot;</span>);</pre></div><hr/><div class="block"><p>The names of the arguments of a function are available as variables
+inside it. They will refer to the values of the arguments the function
+is being called with, and like normal variables created inside a
+function, they do not exist outside it. Aside from the <a name="key7"></a>top-level
+environment, there are smaller, <a name="key8"></a>local environments created by
+function calls. When looking up a variable inside a function, the
+local environment is checked first, and only if the variable does not
+exist there is it looked up in the top-level environment. This makes
+it possible for variables inside a function to '<a name="key9"></a>shadow' top-level
+variables that have the same name.</p><pre class="code"><span class="keyword">function</span> <span class="variable">alertIsPrint</span>(<span class="variabledef">value</span>) {
+  <span class="keyword">var</span> <span class="variabledef">alert</span> = <span class="variable">print</span>;
+  <span class="localvariable">alert</span>(<span class="localvariable">value</span>);
+}
+
+<span class="variable">alertIsPrint</span>(<span class="string">&quot;Troglodites&quot;</span>);</pre><p>The variables in this local environment are only visible to the code
+inside the function. If this function calls another function, the
+newly called function does not see the variables inside the first
+function:</p><pre class="code"><span class="keyword">var</span> <span class="variable">variable</span> = <span class="string">&quot;top-level&quot;</span>;
+
+<span class="keyword">function</span> <span class="variable">printVariable</span>() {
+  <span class="variable">print</span>(<span class="string">&quot;inside printVariable, the variable holds '&quot;</span> +
+        <span class="variable">variable</span> + <span class="string">&quot;'.&quot;</span>);
+}
+
+<span class="keyword">function</span> <span class="variable">test</span>() {
+  <span class="keyword">var</span> <span class="variabledef">variable</span> = <span class="string">&quot;local&quot;</span>;
+  <span class="variable">print</span>(<span class="string">&quot;inside test, the variable holds '&quot;</span> + <span class="localvariable">variable</span> + <span class="string">&quot;'.&quot;</span>);
+  <span class="variable">printVariable</span>();
+}
+
+<span class="variable">test</span>();</pre><p>However, and this is a subtle but extremely useful phenomenon, when a
+function is defined <em>inside</em> another function, its local environment
+will be based on the local environment that surrounds it instead of
+the top-level environment.</p><pre class="code"><span class="keyword">var</span> <span class="variable">variable</span> = <span class="string">&quot;top-level&quot;</span>;
+<span class="keyword">function</span> <span class="variable">parentFunction</span>() {
+  <span class="keyword">var</span> <span class="variabledef">variable</span> = <span class="string">&quot;local&quot;</span>;
+  <span class="keyword">function</span> <span class="variabledef">childFunction</span>() {
+    <span class="variable">print</span>(<span class="localvariable">variable</span>);
+  }
+  <span class="localvariable">childFunction</span>();
+}
+<span class="variable">parentFunction</span>();</pre><p>What this comes down to is that which variables are visible inside a
+function is determined by the place of that function in the program
+text. All variables that were defined 'above' a function's definition
+are visible, which means both those in function bodies that enclose
+it, and those at the top-level of the program. This approach to
+variable visibility is called <a name="key10"></a>lexical scoping.</p></div><hr/><div class="block"><p>People who have experience with other programming languages might
+expect that a <a name="key11"></a>block of code (between braces) also produces a new
+local environment. Not in JavaScript. Functions are the only things
+that create a new scope. You are allowed to use free-standing blocks
+like this...</p><pre class="code"><span class="keyword">var</span> <span class="variable">something</span> = <span class="atom">1</span>;
+{
+  <span class="keyword">var</span> <span class="variable">something</span> = <span class="atom">2</span>;
+  <span class="variable">print</span>(<span class="string">&quot;Inside: &quot;</span> + <span class="variable">something</span>);
+}
+<span class="variable">print</span>(<span class="string">&quot;Outside: &quot;</span> + <span class="variable">something</span>);</pre><p>... but the <code>something</code> inside the block refers to the same variable
+as the one outside the block. In fact, although blocks like this are
+allowed, they are utterly pointless. Most people agree that this is a
+bit of a design blunder by the designers of JavaScript, and ECMAScript
+Harmony will add some way to define variables that stay inside blocks
+(the <code>let</code> keyword).</p></div><hr/><div class="block"><p>Here is a case that might surprise you:</p><pre class="code"><span class="keyword">var</span> <span class="variable">variable</span> = <span class="string">&quot;top-level&quot;</span>;
+<span class="keyword">function</span> <span class="variable">parentFunction</span>() {
+  <span class="keyword">var</span> <span class="variabledef">variable</span> = <span class="string">&quot;local&quot;</span>;
+  <span class="keyword">function</span> <span class="variabledef">childFunction</span>() {
+    <span class="variable">print</span>(<span class="localvariable">variable</span>);
+  }
+  <span class="keyword">return</span> <span class="localvariable">childFunction</span>;
+}
+
+<span class="keyword">var</span> <span class="variable">child</span> = <span class="variable">parentFunction</span>();
+<span class="variable">child</span>();</pre><p><code>parentFunction</code> <em>returns</em> its internal function, and the code at the
+bottom calls this function. Even though <code>parentFunction</code> has finished
+executing at this point, the local environment where <code>variable</code> has
+the value <code>&quot;local&quot;</code> still exists, and <code>childFunction</code> still uses it.
+This phenomenon is called <a name="key12"></a>closure.</p></div><hr/><div class="block"><p>Apart from making it very easy to quickly see in which part of a
+program a variable will be available by looking at the shape of the
+program text, lexical scoping also allows us to 'synthesise'
+functions. By using some of the variables from an enclosing function,
+an inner function can be made to do different things. Imagine we need
+a few different but similar functions, one that adds 2 to its
+argument, one that adds 5, and so on.</p><pre class="code"><span class="keyword">function</span> <span class="variable">makeAddFunction</span>(<span class="variabledef">amount</span>) {
+  <span class="keyword">function</span> <span class="variabledef">add</span>(<span class="variabledef">number</span>) {
+    <span class="keyword">return</span> <span class="localvariable">number</span> + <span class="localvariable">amount</span>;
+  }
+  <span class="keyword">return</span> <span class="localvariable">add</span>;
+}
+
+<span class="keyword">var</span> <span class="variable">addTwo</span> = <span class="variable">makeAddFunction</span>(<span class="atom">2</span>);
+<span class="keyword">var</span> <span class="variable">addFive</span> = <span class="variable">makeAddFunction</span>(<span class="atom">5</span>);
+<span class="variable">show</span>(<span class="variable">addTwo</span>(<span class="atom">1</span>) + <span class="variable">addFive</span>(<span class="atom">1</span>));</pre><p>To wrap your head around this, you should consider functions to not
+just package up a computation, but also an environment. Top-level
+functions simply execute in the top-level environment, that much is
+obvious. But a function defined inside another function retains access
+to the environment that existed in that function at the point when it
+was defined.</p><p>Thus, the <code>add</code> function in the above example, which is created when
+<code>makeAddFunction</code> is called, captures an environment in which <code>amount</code>
+has a certain value. It packages this environment, together with the
+computation <code>return number + amount</code>, into a value, which is then
+returned from the outer function.</p><p>When this returned function (<code>addTwo</code> or <code>addFive</code>) is called, a new
+environment―-in which the variable <code>number</code> has a value―-is created,
+as a sub-environment of the captured environment (in which <code>amount</code>
+has a value). These two values are then added, and the result is
+returned.</p></div><hr/><div class="block"><p>On top of the fact that different functions can contain variables of
+the same name without getting tangled up, these scoping rules also
+allow functions to call <em>themselves</em> without running into problems. A
+function that calls itself is called recursive. <a name="key13"></a>Recursion
+allows for some interesting definitions. Look at this implementation
+of <code>power</code>:</p><pre class="code"><span class="keyword">function</span> <span class="variable">power</span>(<span class="variabledef">base</span>, <span class="variabledef">exponent</span>) {
+  <span class="keyword">if</span> (<span class="localvariable">exponent</span> == <span class="atom">0</span>)
+    <span class="keyword">return</span> <span class="atom">1</span>;
+  <span class="keyword">else</span>
+    <span class="keyword">return</span> <span class="localvariable">base</span> * <span class="variable">power</span>(<span class="localvariable">base</span>, <span class="localvariable">exponent</span> - <span class="atom">1</span>);
+}</pre><p>This is rather close to the way mathematicians define exponentiation,
+and to me it looks a lot nicer than the earlier version. It sort of
+loops, but there is no <code>while</code>, <code>for</code>, or even a local side effect to
+be seen. By calling itself, the function produces the same effect.</p><p>There is one important problem though: In most browsers, this second
+version is about ten times slower than the first one. In JavaScript,
+running through a simple loop is a lot cheaper than calling a
+function multiple times.</p></div><hr/><div class="block"><p><a name="key14"></a>The dilemma of speed versus <a name="key15"></a>elegance is an interesting
+one. It not only occurs when deciding for or against recursion. In
+many situations, an elegant, intuitive, and often short solution can
+be replaced by a more convoluted but faster solution.</p><p>In the case of the <code>power</code> function above the un-elegant version is
+still sufficiently simple and easy to read. It doesn't make very much
+sense to replace it with the recursive version. Often, though, the
+concepts a program is dealing with get so complex that giving up some
+efficiency in order to make the program more straightforward becomes
+an attractive choice.</p><p>The basic rule, which has been repeated by many programmers and with
+which I wholeheartedly agree, is to not worry about efficiency until
+your program is provably too slow. When it is, find out which parts
+are too slow, and start exchanging elegance for efficiency in those
+parts.</p><p>Of course, the above rule doesn't mean one should start ignoring
+performance altogether. In many cases, like the <code>power</code> function, not
+much simplicity is gained by the 'elegant' approach. In other cases,
+an experienced programmer can see right away that a simple approach is
+never going to be fast enough.</p><p>The reason I am making a big deal out of this is that surprisingly
+many programmers focus fanatically on efficiency, even in the smallest
+details. The result is bigger, more complicated, and often less
+correct programs, which take longer to write than their more
+straightforward equivalents and often run only marginally faster.</p></div><hr/><div class="block"><p>But I was talking about recursion. A concept closely related to
+recursion is a thing called the <a name="key16"></a>stack. When a function is called,
+control is given to the body of that function. When that body returns,
+the code that called the function is resumed. While the body is
+running, the computer must remember the context from which the
+function was called, so that it knows where to continue afterwards.
+The place where this context is stored is called the stack.</p><p>The fact that it is called 'stack' has to do with the fact that, as we
+saw, a function body can again call a function. Every time a function
+is called, another context has to be stored. One can visualise this as
+a stack of contexts. Every time a function is called, the current
+context is thrown on top of the stack. When a function returns, the
+context on top is taken off the stack and resumed.</p><p>This stack requires space in the computer's memory to be stored. When
+the stack grows too big, the computer will give up with a message like
+&quot;out of stack space&quot; or &quot;too much recursion&quot;. This is something that
+has to be kept in mind when writing recursive functions.</p><pre class="code invalid"><span class="keyword">function</span> <span class="variable">chicken</span>() {
+  <span class="keyword">return</span> <span class="variable">egg</span>();
+}
+<span class="keyword">function</span> <span class="variable">egg</span>() {
+  <span class="keyword">return</span> <span class="variable">chicken</span>();
+}
+<span class="variable">print</span>(<span class="variable">chicken</span>() + <span class="string">&quot; came first.&quot;</span>);</pre><p>In addition to demonstrating a very interesting way of writing a
+broken program, this example shows that a function does not have to
+call itself directly to be recursive. If it calls another function
+which (directly or indirectly) calls the first function again, it is
+still recursive.</p></div><hr/><div class="block"><p>Recursion is not always just a less-efficient alternative to looping.
+Some problems are much easier to solve with recursion than with loops.
+Most often these are problems that require exploring or processing
+several 'branches', each of which might branch out again into more
+branches.</p><p>Consider this puzzle: By starting from the number 1 and repeatedly
+either adding 5 or multiplying by 3, an infinite amount of new numbers
+can be produced. How would you write a function that, given a number,
+tries to find a sequence of additions and multiplications that produce
+that number?</p><p>For example, the number 13 could be reached by first multiplying 1 by
+3, and then adding 5 twice. The number 15 can not be reached at all.</p><p>Here is the solution:</p><pre class="code"><span class="keyword">function</span> <span class="variable">findSequence</span>(<span class="variabledef">goal</span>) {
+  <span class="keyword">function</span> <span class="variabledef">find</span>(<span class="variabledef">start</span>, <span class="variabledef">history</span>) {
+    <span class="keyword">if</span> (<span class="localvariable">start</span> == <span class="localvariable">goal</span>)
+      <span class="keyword">return</span> <span class="localvariable">history</span>;
+    <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">start</span> &gt; <span class="localvariable">goal</span>)
+      <span class="keyword">return</span> <span class="atom">null</span>;
+    <span class="keyword">else</span>
+      <span class="keyword">return</span> <span class="localvariable">find</span>(<span class="localvariable">start</span> + <span class="atom">5</span>, <span class="string">&quot;(&quot;</span> + <span class="localvariable">history</span> + <span class="string">&quot; + 5)&quot;</span>) ||
+             <span class="localvariable">find</span>(<span class="localvariable">start</span> * <span class="atom">3</span>, <span class="string">&quot;(&quot;</span> + <span class="localvariable">history</span> + <span class="string">&quot; * 3)&quot;</span>);
+  }
+  <span class="keyword">return</span> <span class="localvariable">find</span>(<span class="atom">1</span>, <span class="string">&quot;1&quot;</span>);
+}
+
+<span class="variable">print</span>(<span class="variable">findSequence</span>(<span class="atom">24</span>));</pre><p>Note that it doesn't necessarily find the <em>shortest</em> sequence of
+operations, it is satisfied when it finds any sequence at all.</p><p>The inner <code>find</code> function, by calling itself in two different ways,
+explores both the possibility of adding 5 to the current number and of
+multiplying it by 3. When it finds the number, it returns the
+<code>history</code> string, which is used to record all the operators that were
+performed to get to this number. It also checks whether the current
+number is bigger than <code>goal</code>, because if it is, we should stop
+exploring this branch, it is not going to give us our number.</p><p>The use of the <code>||</code> operator in the example can be read as 'return the
+solution found by adding 5 to <code>start</code>, and if that fails, return the
+solution found by multiplying <code>start</code> by 3'. It could also have been
+written in a more wordy way like this:</p><pre class="code invalid"><span class="keyword">else</span> {
+  <span class="keyword">var</span> <span class="variable">found</span> = <span class="variable">find</span>(<span class="variable">start</span> + <span class="atom">5</span>, <span class="string">&quot;(&quot;</span> + <span class="variable">history</span> + <span class="string">&quot; + 5)&quot;</span>);
+  <span class="keyword">if</span> (<span class="variable">found</span> == <span class="atom">null</span>)
+    <span class="variable">found</span> = <span class="variable">find</span>(<span class="variable">start</span> * <span class="atom">3</span>, <span class="variable">history</span> + <span class="string">&quot; * 3&quot;</span>);
+  <span class="keyword">return</span> <span class="variable">found</span>;
+}</pre></div><hr/><div class="block"><p>Even though function definitions occur as statements between the rest
+of the program, they are not part of the same time-line:</p><pre class="code"><span class="variable">print</span>(<span class="string">&quot;The future says: &quot;</span>, <span class="variable">future</span>());
+
+<span class="keyword">function</span> <span class="variable">future</span>() {
+  <span class="keyword">return</span> <span class="string">&quot;We STILL have no flying cars.&quot;</span>;
+}</pre><p>What is happening is that the computer looks up all function
+definitions, and stores the associated functions, <em>before</em> it starts
+executing the rest of the program. The same happens with functions
+that are defined inside other functions. When the outer function is
+called, the first thing that happens is that all inner functions are
+added to the new environment.</p></div><hr/><div class="block"><p>There is another way to define function values, which more closely
+resembles the way other values are created. When the <code>function</code>
+keyword is used in a place where an expression is expected, it is
+treated as an expression producing a function value. Functions created
+in this way do not have to be given a name (though it is allowed to
+give them one).</p><pre class="code"><span class="keyword">var</span> <span class="variable">add</span> = <span class="keyword">function</span>(<span class="variabledef">a</span>, <span class="variabledef">b</span>) {
+  <span class="keyword">return</span> <span class="localvariable">a</span> + <span class="localvariable">b</span>;
+};
+<span class="variable">show</span>(<span class="variable">add</span>(<span class="atom">5</span>, <span class="atom">5</span>));</pre><p>Note the semicolon after the definition of <code>add</code>. Normal function
+definitions do not need these, but this statement has the same general
+structure as <code>var add = 22;</code>, and thus requires the semicolon.</p><p>This kind of function value is called an <a name="key17"></a>anonymous function, because
+it does not have a name. Sometimes it is useless to give a function a
+name, like in the <code>makeAddFunction</code> example we saw earlier:</p><pre class="code"><span class="keyword">function</span> <span class="variable">makeAddFunction</span>(<span class="variabledef">amount</span>) {
+  <span class="keyword">return</span> <span class="keyword">function</span> (<span class="variabledef">number</span>) {
+    <span class="keyword">return</span> <span class="localvariable">number</span> + <span class="localvariable">amount</span>;
+  };
+}</pre><p>Since the function named <code>add</code> in the first version of
+<code>makeAddFunction</code> was referred to only once, the name does not serve
+any purpose and we might as well directly return the function value.</p></div><hr/><div class="block"><a name="exercise2"></a><div class="exercisenum">Ex. 3.2</div><div class="exercise"><p>Write a function <code>greaterThan</code>, which takes one argument, a number,
+and returns a function that represents a test. When this returned
+function is called with a single number as argument, it returns a
+boolean: <code>true</code> if the given number is greater than the number that
+was used to create the test function, and <code>false</code> otherwise.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">greaterThan</span>(<span class="variabledef">x</span>) {
+  <span class="keyword">return</span> <span class="keyword">function</span>(<span class="variabledef">y</span>) {
+    <span class="keyword">return</span> <span class="localvariable">y</span> &gt; <span class="localvariable">x</span>;
+  };
+}
+
+<span class="keyword">var</span> <span class="variable">greaterThanTen</span> = <span class="variable">greaterThan</span>(<span class="atom">10</span>);
+<span class="variable">show</span>(<span class="variable">greaterThanTen</span>(<span class="atom">9</span>));</pre></div></div><hr/><div class="block"><p>Try the following:</p><pre class="code"><span class="variable">alert</span>(<span class="string">&quot;Hello&quot;</span>, <span class="string">&quot;Good Evening&quot;</span>, <span class="string">&quot;How do you do?&quot;</span>, <span class="string">&quot;Goodbye&quot;</span>);</pre><p>The function <code>alert</code> officially only accepts one argument. Yet when
+you call it like this, the computer does not complain at all, but just
+ignores the other arguments.</p><pre class="code"><span class="variable">show</span>();</pre><p>You can, apparently, even get away with passing too few arguments.
+When an argument is not passed, its value inside the function is
+<code>undefined</code>.</p><p>In the next chapter, we will see a way in which a function body can
+get at the exact list of arguments that were passed to it. This can be
+useful, as it makes it possible to have a function accept any number
+of arguments. <code>print</code> makes use of this:</p><pre class="code"><span class="variable">print</span>(<span class="string">&quot;R&quot;</span>, <span class="atom">2</span>, <span class="string">&quot;D&quot;</span>, <span class="atom">2</span>);</pre><p>Of course, the downside of this is that it is also possible to
+accidentally pass the wrong number of arguments to functions that
+expect a fixed amount of them, like <code>alert</code>, and never be told about
+it.</p></div><ol class="footnotes"><li><a name="footnote1"></a>Technically, this wouldn't have been necessary, but I suppose the
+designers of JavaScript felt it would clarify things if function
+bodies always had braces.</li><li><a name="footnote2"></a>Technically, a pure function can not use the value of any external
+variables. These values might change, and this could make the function
+return a different value for the same arguments. In practice, the
+programmer may consider some variables 'constant' ― they are not
+expected to change ― and consider functions that use only constant
+variables pure. Variables that contain a function value are often good
+examples of constant variables.</li></ol><div class="navigation"><a href="chapter2.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter4.html">Next chapter &gt;&gt;</a></div><div class="footer">© <a href="mailto:marijnh@gmail.com">Marijn Haverbeke</a> (<a href="http://creativecommons.org/licenses/by/3.0/">license</a>), written March to July 2007, last modified on April 4 2012.</div></div><script type="text/javascript" src="js/mochi.js"> </script><script type="text/javascript" src="js/codemirror.js"> </script><script type="text/javascript" src="js/ejs.js"> </script></body></html>

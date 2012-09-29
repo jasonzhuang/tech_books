@@ -1,0 +1,206 @@
+<html><head><link rel="stylesheet" type="text/css" href="css/book.css"/><link rel="stylesheet" type="text/css" href="css/highlight.css"/><link rel="stylesheet" type="text/css" href="css/console.css"/><link rel="stylesheet" type="text/css" href="css/codemirror.css"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>Binary Heaps -- Eloquent JavaScript</title></head><body><script type="text/javascript" src="js/before.js"> </script><div class="content"><script type="text/javascript">var chapterTag = 'binaryheap';</script><div class="navigation"><a href="appendix1.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | Next chapter &gt;&gt;</div><h1><span class="number">Appendix 2: </span>Binary Heaps</h1><div class="block"><p>In <a href="chapter7.html">chapter 7</a>, the <a name="key1"></a>binary heap was introduced as a method to store a
+collection of objects in such a way that the smallest element can be
+quickly found. As promised, this appendix will explain the details
+behind this data structure.</p><p>Consider again the problem we needed to solve. The A* algorithm
+created large amounts of small objects, and had to keep these in an
+'open list'. It was also constantly removing the smallest element from
+this list. The simplest approach would be to just keep all the objects
+in an array, and search for the smallest one when we need it. But,
+unless we have a <em>lot</em> of time, this will not do. Finding the smallest
+element in an unsorted array requires going over the whole array, and
+checking each element.</p><p>The next solution would be, of course, to sort our array. JavaScript
+arrays have a wonderful <a name="key2"></a><code>sort</code> method, which can be used to do the
+heavy work. Unfortunately, re-sorting a whole array every time an
+element is removed is more work than searching for a minimum value in
+an unsorted array. Some tricks can be used, such as, instead of
+re-sorting the whole array, just making sure new values are inserted
+in the right place so that the array, which was sorted before, stays
+sorted. This is coming closer to the approach a binary heap uses
+already, but inserting a value in the middle of an array requires
+moving all the elements after it one place up, which is still just too
+slow.</p><p>Another approach is to not use an array at all, but to store the
+values in a set of interconnected objects. A simple form of this is to
+have every object hold one value and two (or less) links to other
+objects. There is one root object, holding the smallest value, which
+is used to access all the other objects. Links always point to objects
+holding greater values, so the whole structure looks something like
+this:</p><div class="illustration"><img src="img/tree.png"/></div><p>Such structures are usually called <a name="key3"></a>trees, because of the way they
+branch. Now, when you need the smallest element, you just take off the
+top element and rearrange the tree so that one of the top element's
+children ― the one with the lowest value ― becomes the new top. When
+inserting new elements, you 'descend' the tree until you find an
+element less than the new element, and insert it there. This takes a
+lot less searching than a sorted array does, but it has the
+disadvantage of creating a lot of objects, which also slows things
+down.</p></div><hr/><div class="block"><p>A binary heap, then, does make use of a sorted array, but it is only
+partially sorted, much like the tree above. Instead of objects, the
+positions in the array are used to form a tree, as this picture tries
+to show:</p><div class="illustration"><img src="img/heap.png"/></div><p>Array element <code>1</code> is the root of the tree, array element <code>2</code> and <code>3</code>
+are its children, and in general array element <code>X</code> has children <code>X *
+2</code> and <code>X * 2 + 1</code>. You can see why this structure is called a 'heap'.
+Note that this array starts at <code>1</code>, while JavaScript arrays start at
+<code>0</code>. The heap will always keep the smallest element in position <code>1</code>,
+and make sure that for every element in the array at position <code>X</code>, the
+element at <code>X / 2</code> (round down) is smaller.</p><p>Finding the smallest element is now a matter of taking the element at
+position <code>1</code>. But when this element is removed, the heap must make
+sure that there are no holes left in the array. To do this, it takes
+the last element in the array and moves it to the start, and then
+compares it to its child elements at position <code>2</code> and <code>3</code>. It is
+likely to be greater, so it is exchanged with one of them, and the
+process of comparing it with its children is repeated for the new
+position, and so on, until it comes to a position where its children
+are greater, or a position where it has no children.</p><pre class="preformatted">[2, 3, 5, 4, 8, 7, 6]
+Take out 2, move 6 to the front.
+[6, 3, 5, 4, 8, 7]
+6 is greater than its first child 3, so swap them.
+[3, 6, 5, 4, 8, 7]
+Now 6 has children 4 and 8 (position 4 and 5). It is greater than
+4, so we swap again.
+[3, 4, 5, 6, 8, 7]
+6 is in position 4, and has no more children. The heap is in order
+again.</pre><p>Similarly, when an element has to be added to the heap, it is put at
+the end of the array and allowed to 'bubble' up by repeatedly
+exchanging it with its parent, until we find a parent that is less
+than the new node.</p><pre class="preformatted">[3, 4, 5, 6, 8, 7]
+Element 2 gets added again, it starts at the back.
+[3, 4, 5, 6, 8, 7, 2]
+2 is in position 7, its parent is at 3, which is a 5. 5 is greater
+than 2, so we swap.
+[3, 4, 2, 6, 8, 7, 5]
+The parent of position 3 is position 1. Again, we swap.
+[2, 4, 3, 6, 8, 7, 5]
+The element can not go further than position 1, so we are done.</pre><p>Note how adding or inserting an element does not require it to be
+compared with every element in the array. In fact, because the jumps
+between parents and children get bigger as the array gets bigger, this
+advantage is especially large when we have a lot of elements<a class="footref" href="#footnote1">1</a>.</p></div><hr/><div class="block"><p>Here is the full code of a binary heap implementation. Two things to
+note are that, instead of directly comparing the elements put into the
+heap, a function (<code>scoreFunction</code>) is first applied to them, so that
+it becomes possible to store objects that can not be directly
+compared.</p><p>Also, because JavaScript arrays start at <code>0</code>, and the parent/child
+calculations use a system that starts at <code>1</code>, there are a few strange
+calculations to compensate.</p><pre class="code"><span class="keyword">function</span> <span class="variable">BinaryHeap</span>(<span class="variabledef">scoreFunction</span>){
+  <span class="localvariable">this</span>.<span class="property">content</span> = [];
+  <span class="localvariable">this</span>.<span class="property">scoreFunction</span> = <span class="localvariable">scoreFunction</span>;
+}
+
+<span class="variable">BinaryHeap</span>.<span class="property">prototype</span> = {
+  <span class="property">push</span>: <span class="keyword">function</span>(<span class="variabledef">element</span>) {
+    <span class="comment">// Add the new element to the end of the array.</span>
+    <span class="localvariable">this</span>.<span class="property">content</span>.<span class="property">push</span>(<span class="localvariable">element</span>);
+    <span class="comment">// Allow it to bubble up.</span>
+    <span class="localvariable">this</span>.<span class="property">bubbleUp</span>(<span class="localvariable">this</span>.<span class="property">content</span>.<span class="property">length</span> - <span class="atom">1</span>);
+  },
+
+  <span class="property">pop</span>: <span class="keyword">function</span>() {
+    <span class="comment">// Store the first element so we can return it later.</span>
+    <span class="keyword">var</span> <span class="variabledef">result</span> = <span class="localvariable">this</span>.<span class="property">content</span>[<span class="atom">0</span>];
+    <span class="comment">// Get the element at the end of the array.</span>
+    <span class="keyword">var</span> <span class="variabledef">end</span> = <span class="localvariable">this</span>.<span class="property">content</span>.<span class="property">pop</span>();
+    <span class="comment">// If there are any elements left, put the end element at the</span>
+    <span class="comment">// start, and let it sink down.</span>
+    <span class="keyword">if</span> (<span class="localvariable">this</span>.<span class="property">content</span>.<span class="property">length</span> &gt; <span class="atom">0</span>) {
+      <span class="localvariable">this</span>.<span class="property">content</span>[<span class="atom">0</span>] = <span class="localvariable">end</span>;
+      <span class="localvariable">this</span>.<span class="property">sinkDown</span>(<span class="atom">0</span>);
+    }
+    <span class="keyword">return</span> <span class="localvariable">result</span>;
+  },
+
+  <span class="property">remove</span>: <span class="keyword">function</span>(<span class="variabledef">node</span>) {
+    <span class="keyword">var</span> <span class="variabledef">len</span> = <span class="localvariable">this</span>.<span class="property">content</span>.<span class="property">length</span>;
+    <span class="comment">// To remove a value, we must search through the array to find</span>
+    <span class="comment">// it.</span>
+    <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">0</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">len</span>; <span class="localvariable">i</span>++) {
+      <span class="keyword">if</span> (<span class="localvariable">this</span>.<span class="property">content</span>[<span class="localvariable">i</span>] == <span class="localvariable">node</span>) {
+        <span class="comment">// When it is found, the process seen in 'pop' is repeated</span>
+        <span class="comment">// to fill up the hole.</span>
+        <span class="keyword">var</span> <span class="variabledef">end</span> = <span class="localvariable">this</span>.<span class="property">content</span>.<span class="property">pop</span>();
+        <span class="keyword">if</span> (<span class="localvariable">i</span> != <span class="localvariable">len</span> - <span class="atom">1</span>) {
+          <span class="localvariable">this</span>.<span class="property">content</span>[<span class="localvariable">i</span>] = <span class="localvariable">end</span>;
+          <span class="keyword">if</span> (<span class="localvariable">this</span>.<span class="property">scoreFunction</span>(<span class="localvariable">end</span>) &lt; <span class="localvariable">this</span>.<span class="property">scoreFunction</span>(<span class="localvariable">node</span>))
+            <span class="localvariable">this</span>.<span class="property">bubbleUp</span>(<span class="localvariable">i</span>);
+          <span class="keyword">else</span>
+            <span class="localvariable">this</span>.<span class="property">sinkDown</span>(<span class="localvariable">i</span>);
+        }
+        <span class="keyword">return</span>;
+      }
+    }
+    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="variable">Error</span>(<span class="string">&quot;Node not found.&quot;</span>);
+  },
+
+  <span class="property">size</span>: <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="localvariable">this</span>.<span class="property">content</span>.<span class="property">length</span>;
+  },
+
+  <span class="property">bubbleUp</span>: <span class="keyword">function</span>(<span class="variabledef">n</span>) {
+    <span class="comment">// Fetch the element that has to be moved.</span>
+    <span class="keyword">var</span> <span class="variabledef">element</span> = <span class="localvariable">this</span>.<span class="property">content</span>[<span class="localvariable">n</span>];
+    <span class="comment">// When at 0, an element can not go up any further.</span>
+    <span class="keyword">while</span> (<span class="localvariable">n</span> &gt; <span class="atom">0</span>) {
+      <span class="comment">// Compute the parent element's index, and fetch it.</span>
+      <span class="keyword">var</span> <span class="variabledef">parentN</span> = <span class="variable">Math</span>.<span class="property">floor</span>((<span class="localvariable">n</span> + <span class="atom">1</span>) / <span class="atom">2</span>) - <span class="atom">1</span>,
+          <span class="variabledef">parent</span> = <span class="localvariable">this</span>.<span class="property">content</span>[<span class="localvariable">parentN</span>];
+      <span class="comment">// Swap the elements if the parent is greater.</span>
+      <span class="keyword">if</span> (<span class="localvariable">this</span>.<span class="property">scoreFunction</span>(<span class="localvariable">element</span>) &lt; <span class="localvariable">this</span>.<span class="property">scoreFunction</span>(<span class="localvariable">parent</span>)) {
+        <span class="localvariable">this</span>.<span class="property">content</span>[<span class="localvariable">parentN</span>] = <span class="localvariable">element</span>;
+        <span class="localvariable">this</span>.<span class="property">content</span>[<span class="localvariable">n</span>] = <span class="localvariable">parent</span>;
+        <span class="comment">// Update 'n' to continue at the new position.</span>
+        <span class="localvariable">n</span> = <span class="localvariable">parentN</span>;
+      }
+      <span class="comment">// Found a parent that is less, no need to move it further.</span>
+      <span class="keyword">else</span> {
+        <span class="keyword">break</span>;
+      }
+    }
+  },
+
+  <span class="property">sinkDown</span>: <span class="keyword">function</span>(<span class="variabledef">n</span>) {
+    <span class="comment">// Look up the target element and its score.</span>
+    <span class="keyword">var</span> <span class="variabledef">length</span> = <span class="localvariable">this</span>.<span class="property">content</span>.<span class="property">length</span>,
+        <span class="variabledef">element</span> = <span class="localvariable">this</span>.<span class="property">content</span>[<span class="localvariable">n</span>],
+        <span class="variabledef">elemScore</span> = <span class="localvariable">this</span>.<span class="property">scoreFunction</span>(<span class="localvariable">element</span>);
+
+    <span class="keyword">while</span>(<span class="atom">true</span>) {
+      <span class="comment">// Compute the indices of the child elements.</span>
+      <span class="keyword">var</span> <span class="variabledef">child2N</span> = (<span class="localvariable">n</span> + <span class="atom">1</span>) * <span class="atom">2</span>, <span class="variabledef">child1N</span> = <span class="localvariable">child2N</span> - <span class="atom">1</span>;
+      <span class="comment">// This is used to store the new position of the element,</span>
+      <span class="comment">// if any.</span>
+      <span class="keyword">var</span> <span class="variabledef">swap</span> = <span class="atom">null</span>;
+      <span class="comment">// If the first child exists (is inside the array)...</span>
+      <span class="keyword">if</span> (<span class="localvariable">child1N</span> &lt; <span class="localvariable">length</span>) {
+        <span class="comment">// Look it up and compute its score.</span>
+        <span class="keyword">var</span> <span class="variabledef">child1</span> = <span class="localvariable">this</span>.<span class="property">content</span>[<span class="localvariable">child1N</span>],
+            <span class="variabledef">child1Score</span> = <span class="localvariable">this</span>.<span class="property">scoreFunction</span>(<span class="localvariable">child1</span>);
+        <span class="comment">// If the score is less than our element's, we need to swap.</span>
+        <span class="keyword">if</span> (<span class="localvariable">child1Score</span> &lt; <span class="localvariable">elemScore</span>)
+          <span class="localvariable">swap</span> = <span class="localvariable">child1N</span>;
+      }
+      <span class="comment">// Do the same checks for the other child.</span>
+      <span class="keyword">if</span> (<span class="localvariable">child2N</span> &lt; <span class="localvariable">length</span>) {
+        <span class="keyword">var</span> <span class="variabledef">child2</span> = <span class="localvariable">this</span>.<span class="property">content</span>[<span class="localvariable">child2N</span>],
+            <span class="variabledef">child2Score</span> = <span class="localvariable">this</span>.<span class="property">scoreFunction</span>(<span class="localvariable">child2</span>);
+        <span class="keyword">if</span> (<span class="localvariable">child2Score</span> &lt; (<span class="localvariable">swap</span> == <span class="atom">null</span> ? <span class="localvariable">elemScore</span> : <span class="localvariable">child1Score</span>))
+          <span class="localvariable">swap</span> = <span class="localvariable">child2N</span>;
+      }
+
+      <span class="comment">// If the element needs to be moved, swap it, and continue.</span>
+      <span class="keyword">if</span> (<span class="localvariable">swap</span> != <span class="atom">null</span>) {
+        <span class="localvariable">this</span>.<span class="property">content</span>[<span class="localvariable">n</span>] = <span class="localvariable">this</span>.<span class="property">content</span>[<span class="localvariable">swap</span>];
+        <span class="localvariable">this</span>.<span class="property">content</span>[<span class="localvariable">swap</span>] = <span class="localvariable">element</span>;
+        <span class="localvariable">n</span> = <span class="localvariable">swap</span>;
+      }
+      <span class="comment">// Otherwise, we are done.</span>
+      <span class="keyword">else</span> {
+        <span class="keyword">break</span>;
+      }
+    }
+  }
+};</pre><p>And a simple test...</p><pre class="code"><span class="keyword">var</span> <span class="variable">heap</span> = <span class="keyword">new</span> <span class="variable">BinaryHeap</span>(<span class="keyword">function</span>(<span class="variabledef">x</span>){<span class="keyword">return</span> <span class="localvariable">x</span>;});
+<span class="variable">forEach</span>([<span class="atom">10</span>, <span class="atom">3</span>, <span class="atom">4</span>, <span class="atom">8</span>, <span class="atom">2</span>, <span class="atom">9</span>, <span class="atom">7</span>, <span class="atom">1</span>, <span class="atom">2</span>, <span class="atom">6</span>, <span class="atom">5</span>],
+        <span class="variable">method</span>(<span class="variable">heap</span>, <span class="string">&quot;push&quot;</span>));
+
+<span class="variable">heap</span>.<span class="property">remove</span>(<span class="atom">2</span>);
+<span class="keyword">while</span> (<span class="variable">heap</span>.<span class="property">size</span>() &gt; <span class="atom">0</span>)
+  <span class="variable">print</span>(<span class="variable">heap</span>.<span class="property">pop</span>());
+</pre></div><ol class="footnotes"><li><a name="footnote1"></a>The amount of comparisons and swaps that are needed ― in the worst
+case ― can be approached by taking the logarithm (base 2) of the
+amount of elements in the heap.</li></ol><div class="navigation"><a href="appendix1.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | Next chapter &gt;&gt;</div><div class="footer">© <a href="mailto:marijnh@gmail.com">Marijn Haverbeke</a> (<a href="http://creativecommons.org/licenses/by/3.0/">license</a>), written March to July 2007, last modified on April 4 2012.</div></div><script type="text/javascript" src="js/mochi.js"> </script><script type="text/javascript" src="js/codemirror.js"> </script><script type="text/javascript" src="js/ejs.js"> </script></body></html>

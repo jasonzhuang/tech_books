@@ -1,0 +1,682 @@
+<html><head><link rel="stylesheet" type="text/css" href="css/book.css"/><link rel="stylesheet" type="text/css" href="css/highlight.css"/><link rel="stylesheet" type="text/css" href="css/console.css"/><link rel="stylesheet" type="text/css" href="css/codemirror.css"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>Data structures: Objects and Arrays -- Eloquent JavaScript</title></head><body><script type="text/javascript" src="js/before.js"> </script><div class="content"><script type="text/javascript">var chapterTag = 'data';</script><div class="navigation"><a href="chapter3.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter5.html">Next chapter &gt;&gt;</a></div><h1><span class="number">Chapter 4: </span>Data structures: Objects and Arrays</h1><div class="block"><p>This chapter will be devoted to solving a few simple problems. In the
+process, we will discuss two new types of values, arrays and objects,
+and look at some techniques related to them.</p><p>Consider the following situation: Your crazy aunt Emily, who is
+rumoured to have over fifty cats living with her (you never managed to
+count them), regularly sends you e-mails to keep you up to date on her
+exploits. They usually look like this:</p><blockquote>Dear nephew,<br/><br/>Your mother told me you have taken up skydiving. Is this true? You
+watch yourself, young man! Remember what happened to my husband? And
+that was only from the second floor!<br/><br/>Anyway, things are very exciting here. I have spent all week trying to
+get the attention of Mr. Drake, the nice gentleman who moved in next
+door, but I think he is afraid of cats. Or allergic to them? I am
+going to try putting Fat Igor on his shoulder next time I see him,
+very curious what will happen.<br/><br/>Also, the scam I told you about is going better than expected. I have
+already gotten back five 'payments', and only one complaint. It is
+starting to make me feel a bit bad though. And you are right that it
+is probably illegal in some way.<br/><br/>(... etc ...)<br/><br/>Much love,
+Aunt Emily<br/><br/>died 27/04/2006: Black Leclère<br/><br/>born 05/04/2006 (mother Lady Penelope): Red Lion, Doctor Hobbles the
+3rd, Little Iroquois</blockquote><p>To humour the old dear, you would like to keep track of the genealogy
+of her cats, so you can add things like &quot;P.S. I hope Doctor Hobbles
+the 2nd enjoyed his birthday this Saturday!&quot;, or &quot;How is old Lady
+Penelope doing? She's five years old now, isn't she?&quot;, preferably
+without accidentally asking about dead cats. You are in the possession
+of a large quantity of old e-mails from your aunt, and fortunately she
+is very consistent in always putting information about the cats'
+births and deaths at the end of her mails in precisely the same
+format.</p><p>You are hardly inclined to go through all those mails by hand.
+Fortunately, we were just in need of an example problem, so we will
+try to work out a program that does the work for us. For a start, we
+write a program that gives us a list of cats that are still alive
+after the last e-mail.</p><p>Before you ask, at the start of the correspondence, aunt Emily had
+only a single cat: Spot. (She was still rather conventional in those
+days.)</p></div><hr/><div class="block"><div class="picture"><img src="img/eyes.png"/></div></div><hr/><div class="block"><p>It usually pays to have some kind of clue what one's program is going
+to do before starting to type. Here's a plan:</p><ol><li>Start with a set of cat names that has only &quot;Spot&quot; in it.</li><li>Go over every e-mail in our archive, in chronological order.</li><li>Look for paragraphs that start with &quot;born&quot; or &quot;died&quot;.</li><li>Add the names from paragraphs that start with &quot;born&quot; to our set of names.</li><li>Remove the names from paragraphs that start with &quot;died&quot; from our set.</li></ol><p>Where taking the names from a paragraph goes like this:</p><ol><li>Find the colon in the paragraph.</li><li>Take the part after this colon.</li><li>Split this part into separate names by looking for commas.</li></ol><p>It may require some suspension of disbelief to accept that aunt Emily
+always used this exact format, and that she never forgot or misspelled
+a name, but that is just how your aunt is.</p></div><hr/><div class="block"><p>First, let me tell you about <a name="key1"></a>properties. A lot of JavaScript values
+have other values associated with them. These associations are called
+properties. Every string has a property called <a name="key2"></a><code>length</code>, which refers
+to a number, the amount of characters in that string.</p><p><a name="key3"></a>Properties can be accessed in two ways:</p><pre class="code"><span class="keyword">var</span> <span class="variable">text</span> = <span class="string">&quot;purple haze&quot;</span>;
+<span class="variable">show</span>(<span class="variable">text</span>[<span class="string">&quot;length&quot;</span>]);
+<span class="variable">show</span>(<span class="variable">text</span>.<span class="property">length</span>);</pre><p>The second way is a shorthand for the first, and it only works when
+the name of the property would be a valid variable name ― when it
+doesn't have any spaces or symbols in it and does not start with a
+digit character.</p><p>The values <code>null</code> and <code>undefined</code> do not have any properties. Trying
+to read properties from such a value produces an error. Try the
+following code, if only to get an idea about the kind of error-message
+your browser produces in such a case (which, for some browsers, can be
+rather cryptic).</p><pre class="code invalid"><span class="keyword">var</span> <span class="variable">nothing</span> = <span class="atom">null</span>;
+<span class="variable">show</span>(<span class="variable">nothing</span>.<span class="property">length</span>);</pre></div><hr/><div class="block"><p>The properties of a string value can not be changed. There are quite a
+few more than just <code>length</code>, as we will see, but you are not allowed
+to add or remove any.</p><p>This is different with values of the type <a name="key4"></a>object. Their main role is
+to hold other values. They have, you could say, their own set of
+tentacles in the form of properties. You are free to modify these,
+remove them, or add new ones.</p><p><a name="key5"></a>An object can be written like this:</p><pre class="code"><span class="keyword">var</span> <span class="variable">cat</span> = {<span class="property">colour</span>: <span class="string">&quot;grey&quot;</span>, <span class="property">name</span>: <span class="string">&quot;Spot&quot;</span>, <span class="property">size</span>: <span class="atom">46</span>};
+<span class="variable">cat</span>.<span class="property">size</span> = <span class="atom">47</span>;
+<span class="variable">show</span>(<span class="variable">cat</span>.<span class="property">size</span>);
+<span class="keyword">delete</span> <span class="variable">cat</span>.<span class="property">size</span>;
+<span class="variable">show</span>(<span class="variable">cat</span>.<span class="property">size</span>);
+<span class="variable">show</span>(<span class="variable">cat</span>);</pre><p>Like variables, each property attached to an object is labelled by a
+string. The first statement creates an object in which the property
+<code>&quot;colour&quot;</code> holds the string <code>&quot;grey&quot;</code>, the property <code>&quot;name&quot;</code> is attached
+to the string <code>&quot;Spot&quot;</code>, and the property <code>&quot;size&quot;</code> refers to the number
+<code>46</code>. The second statement gives the property named <code>size</code> a new
+value, which is done in the same way as modifying a variable.</p><p>The keyword <a name="key6"></a><code>delete</code> cuts off properties. Trying to read a
+non-existent property gives the value <code>undefined</code>.</p><p>If a property that does not yet exist is set with the <a name="key7"></a><code>=</code> operator,
+it is added to the object.</p><pre class="code"><span class="keyword">var</span> <span class="variable">empty</span> = {};
+<span class="variable">empty</span>.<span class="property">notReally</span> = <span class="atom">1000</span>;
+<span class="variable">show</span>(<span class="variable">empty</span>.<span class="property">notReally</span>);</pre><p>Properties whose names are not valid variable names have to be quoted
+when creating the object, and approached using brackets:</p><pre class="code"><span class="keyword">var</span> <span class="variable">thing</span> = {<span class="string">&quot;gabba gabba&quot;</span>: <span class="string">&quot;hey&quot;</span>, <span class="string">&quot;5&quot;</span>: <span class="atom">10</span>};
+<span class="variable">show</span>(<span class="variable">thing</span>[<span class="string">&quot;5&quot;</span>]);
+<span class="variable">thing</span>[<span class="string">&quot;5&quot;</span>] = <span class="atom">20</span>;
+<span class="variable">show</span>(<span class="variable">thing</span>[<span class="atom">2</span> + <span class="atom">3</span>]);
+<span class="keyword">delete</span> <span class="variable">thing</span>[<span class="string">&quot;gabba gabba&quot;</span>];</pre><p>As you can see, the part between the brackets can be any expression.
+It is converted to a string to determine the property name it refers
+to. One can even use variables to name properties:</p><pre class="code"><span class="keyword">var</span> <span class="variable">propertyName</span> = <span class="string">&quot;length&quot;</span>;
+<span class="keyword">var</span> <span class="variable">text</span> = <span class="string">&quot;mainline&quot;</span>;
+<span class="variable">show</span>(<span class="variable">text</span>[<span class="variable">propertyName</span>]);</pre><p>The operator <a name="key8"></a><code>in</code> can be used to test whether an object has a
+certain property. It produces a boolean.</p><pre class="code"><span class="keyword">var</span> <span class="variable">chineseBox</span> = {};
+<span class="variable">chineseBox</span>.<span class="property">content</span> = <span class="variable">chineseBox</span>;
+<span class="variable">show</span>(<span class="string">&quot;content&quot;</span> in <span class="variable">chineseBox</span>);
+<span class="variable">show</span>(<span class="string">&quot;content&quot;</span> in <span class="variable">chineseBox</span>.<span class="property">content</span>);</pre></div><hr/><div class="block"><p>When object values are shown on the console, they can be clicked to
+inspect their properties. This changes the output window to an
+'inspect' window. The little 'x' at the top-right can be used to
+return to the output window, and the left-arrow can be used to go back
+to the properties of the previously inspected object.</p><pre class="code"><span class="variable">show</span>(<span class="variable">chineseBox</span>);</pre></div><hr/><div class="block"><a name="exercise1"></a><div class="exercisenum">Ex. 4.1</div><div class="exercise"><p>The solution for the cat problem talks about a 'set' of names. A <a name="key9"></a>set
+is a collection of values in which no value may occur more than once.
+If names are strings, can you think of a way to use an object to
+represent a set of names?</p><p>Show how a name can be added to this set, how one can be removed, and
+how you can check whether a name occurs in it.</p></div><div class="solution"><p>This can be done by storing the content of the set as the properties
+of an object. Adding a name is done by setting a property by that name
+to a value, any value. Removing a name is done by deleting this
+property. The <code>in</code> operator can be used to determine whether a certain
+name is part of the set<a class="footref" href="#footnote1">1</a>.</p><pre class="code"><span class="keyword">var</span> <span class="variable">set</span> = {<span class="string">&quot;Spot&quot;</span>: <span class="atom">true</span>};
+<span class="comment">// Add &quot;White Fang&quot; to the set</span>
+<span class="variable">set</span>[<span class="string">&quot;White Fang&quot;</span>] = <span class="atom">true</span>;
+<span class="comment">// Remove &quot;Spot&quot;</span>
+<span class="keyword">delete</span> <span class="variable">set</span>[<span class="string">&quot;Spot&quot;</span>];
+<span class="comment">// See if &quot;Asoka&quot; is in the set</span>
+<span class="variable">show</span>(<span class="string">&quot;Asoka&quot;</span> in <span class="variable">set</span>);</pre></div></div><hr/><div class="block"><p><a name="key10"></a>Object values, apparently, can change. The types of
+values discussed in <a href="chapter2.html">chapter 2</a> are all immutable, it is impossible to
+change an existing value of those types. You can combine them and
+derive new values from them, but when you take a specific string
+value, the text inside it can not change. With objects, on the other
+hand, the content of a value can be modified by changing its
+properties.</p><p>When we have two numbers, <code>120</code> and <code>120</code>, they can for all practical
+purposes be considered the precise same number. With objects, there is
+a difference between having two references to the same object and
+having two different objects that contain the same properties.
+Consider the following code:</p><pre class="code"><span class="keyword">var</span> <span class="variable">object1</span> = {<span class="property">value</span>: <span class="atom">10</span>};
+<span class="keyword">var</span> <span class="variable">object2</span> = <span class="variable">object1</span>;
+<span class="keyword">var</span> <span class="variable">object3</span> = {<span class="property">value</span>: <span class="atom">10</span>};
+
+<span class="variable">show</span>(<span class="variable">object1</span> == <span class="variable">object2</span>);
+<span class="variable">show</span>(<span class="variable">object1</span> == <span class="variable">object3</span>);
+
+<span class="variable">object1</span>.<span class="property">value</span> = <span class="atom">15</span>;
+<span class="variable">show</span>(<span class="variable">object2</span>.<span class="property">value</span>);
+<span class="variable">show</span>(<span class="variable">object3</span>.<span class="property">value</span>);</pre><p><code>object1</code> and <code>object2</code> are two variables grasping the <em>same</em> value.
+There is only one actual object, which is why changing <code>object1</code> also
+changes the value of <code>object2</code>. The variable <code>object3</code> points to
+another object, which initially contains the same properties as
+<code>object1</code>, but lives a separate life.</p><p>JavaScript's <a name="key11"></a><code>==</code> operator, when comparing objects, will only return
+<code>true</code> if both values given to it are the precise same value.
+Comparing different objects with identical contents will give <code>false</code>.
+This is useful in some situations, but impractical in others.</p></div><hr/><div class="block"><p>Object values can play a lot of different roles. Behaving like a set
+is only one of those. We will see a few other roles in this chapter,
+and <a href="chapter8.html">chapter 8</a> shows another important way of using objects.</p><p>In the plan for the cat problem ― in fact, call it an <em>algorithm</em>,
+not a plan, that makes it sound like we know what we are talking about
+― in the algorithm, it talks about going over all the e-mails in an
+archive. What does this archive look like? And where does it come
+from?</p><p>Do not worry about the second question for now. <a href="chapter14.html">Chapter 14</a> talks about
+some ways to import data into your programs, but for now you will find
+that the e-mails are just magically there. Some magic is really easy,
+inside computers.</p></div><hr/><div class="block"><p>The way in which the archive is stored is still an interesting
+question. It contains a number of e-mails. An e-mail can be a string,
+that should be obvious. The whole archive could be put into one huge
+string, but that is hardly practical. What we want is a collection of
+separate strings.</p><p>Collections of things are what objects are used for. One could make an
+object like this:</p><pre class="code"><span class="keyword">var</span> <span class="variable">mailArchive</span> = {<span class="string">&quot;the first e-mail&quot;</span>: <span class="string">&quot;Dear nephew, ...&quot;</span>,
+                   <span class="string">&quot;the second e-mail&quot;</span>: <span class="string">&quot;...&quot;</span>
+                   <span class="comment">/* and so on ... */</span>};</pre><p>But that makes it hard to go over the e-mails from start to end ― how
+does the program guess the name of these properties? This can be
+solved by more predictable property names:</p><pre class="code"><span class="keyword">var</span> <span class="variable">mailArchive</span> = {<span class="atom">0</span>: <span class="string">&quot;Dear nephew, ... (mail number 1)&quot;</span>,
+                   <span class="atom">1</span>: <span class="string">&quot;(mail number 2)&quot;</span>,
+                   <span class="atom">2</span>: <span class="string">&quot;(mail number 3)&quot;</span>};
+
+<span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">current</span> = <span class="atom">0</span>; <span class="variable">current</span> in <span class="variable">mailArchive</span>; <span class="variable">current</span>++)
+  <span class="variable">print</span>(<span class="string">&quot;Processing e-mail #&quot;</span>, <span class="variable">current</span>, <span class="string">&quot;: &quot;</span>, <span class="variable">mailArchive</span>[<span class="variable">current</span>]);</pre><p>Luck has it that there is a special kind of objects specifically for
+this kind of use. They are called <a name="key12"></a>arrays, and they provide some
+conveniences, such as a <a name="key13"></a><code>length</code> property that contains the amount
+of values in the array, and a number of operations useful for this
+kind of collection.</p><p><a name="key14"></a>New arrays can be created using brackets (<code>[</code> and <code>]</code>):</p><pre class="code"><span class="keyword">var</span> <span class="variable">mailArchive</span> = [<span class="string">&quot;mail one&quot;</span>, <span class="string">&quot;mail two&quot;</span>, <span class="string">&quot;mail three&quot;</span>];
+
+<span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">current</span> = <span class="atom">0</span>; <span class="variable">current</span> &lt; <span class="variable">mailArchive</span>.<span class="property">length</span>; <span class="variable">current</span>++)
+  <span class="variable">print</span>(<span class="string">&quot;Processing e-mail #&quot;</span>, <span class="variable">current</span>, <span class="string">&quot;: &quot;</span>, <span class="variable">mailArchive</span>[<span class="variable">current</span>]);</pre><p>In this example, the numbers of the elements are not specified
+explicitly anymore. The first one automatically gets the number 0, the
+second the number 1, and so on.</p><p>Why start at 0? People tend to start counting from 1. As unintuitive
+as it seems, numbering the elements in a collection from 0 is often
+more practical. Just go with it for now, it will grow on you.</p><p>Starting at element 0 also means that in a collection with <code>X</code>
+elements, the last element can be found at position <code>X - 1</code>. This is
+why the <code>for</code> loop in the example checks for <code>current &lt;
+mailArchive.length</code>. There is no element at position
+<code>mailArchive.length</code>, so as soon as <code>current</code> has that value, we stop
+looping.</p></div><hr/><div class="block"><a name="exercise2"></a><div class="exercisenum">Ex. 4.2</div><div class="exercise"><p>Write a function <code>range</code> that takes one argument, a positive number,
+and returns an array containing all numbers from 0 up to and including
+the given number.</p><p>An empty array can be created by simply typing <code>[]</code>. Also remember
+that adding properties to an object, and thus also to an array, can be
+done by assigning them a value with the <code>=</code> operator. The <code>length</code>
+property is automatically updated when elements are added.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">range</span>(<span class="variabledef">upto</span>) {
+  <span class="keyword">var</span> <span class="variabledef">result</span> = [];
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">0</span>; <span class="localvariable">i</span> &lt;= <span class="localvariable">upto</span>; <span class="localvariable">i</span>++)
+    <span class="localvariable">result</span>[<span class="localvariable">i</span>] = <span class="localvariable">i</span>;
+  <span class="keyword">return</span> <span class="localvariable">result</span>;
+}
+<span class="variable">show</span>(<span class="variable">range</span>(<span class="atom">4</span>));</pre><p>Instead of naming the loop variable <code>counter</code> or <code>current</code>, as I have
+been doing so far, it is now called simply <code>i</code>. Using single letters,
+usually <code>i</code>, <code>j</code>, or <code>k</code> for loop variables is a widely spread habit
+among programmers. It has its origin mostly in laziness: We'd rather
+type one character than seven, and names like <code>counter</code> and <code>current</code>
+do not really clarify the meaning of the variable much.</p><p>If a program uses too many meaningless single-letter variables, it can
+become unbelievably confusing. In my own programs, I try to only do
+this in a few common cases. Small loops are one of these cases. If the
+loop contains another loop, and that one also uses a variable named
+<code>i</code>, the inner loop will modify the variable that the outer loop is
+using, and everything will break. One could use <code>j</code> for the inner
+loop, but in general, when the body of a loop is big, you should come
+up with a variable name that has some clear meaning.</p></div></div><hr/><div class="block"><p>Both string and array objects contain, in addition to the <code>length</code>
+property, a number of properties that refer to function values.</p><pre class="code"><span class="keyword">var</span> <span class="variable">doh</span> = <span class="string">&quot;Doh&quot;</span>;
+<span class="variable">print</span>(typeof <span class="variable">doh</span>.<span class="property">toUpperCase</span>);
+<span class="variable">print</span>(<span class="variable">doh</span>.<span class="property">toUpperCase</span>());</pre><p>Every string has a <a name="key15"></a><code>toUpperCase</code> property. When called, it will
+return a copy of the string, in which all letters have been converted
+to uppercase. There is also <a name="key16"></a><code>toLowerCase</code>. Guess what that does.</p><p>Notice that, even though the call to <code>toUpperCase</code> does not pass any
+arguments, the function does somehow have access to the string
+<code>&quot;Doh&quot;</code>, the value of which it is a property. How this works precisely
+is described in <a href="chapter8.html">chapter 8</a>.</p><p>Properties that contain functions are generally called <a name="key17"></a>methods, as
+in '<code>toUpperCase</code> is a method of a string object'.</p><pre class="code"><span class="keyword">var</span> <span class="variable">mack</span> = [];
+<span class="variable">mack</span>.<span class="property">push</span>(<span class="string">&quot;Mack&quot;</span>);
+<span class="variable">mack</span>.<span class="property">push</span>(<span class="string">&quot;the&quot;</span>);
+<span class="variable">mack</span>.<span class="property">push</span>(<span class="string">&quot;Knife&quot;</span>);
+<span class="variable">show</span>(<span class="variable">mack</span>.<span class="property">join</span>(<span class="string">&quot; &quot;</span>));
+<span class="variable">show</span>(<span class="variable">mack</span>.<span class="property">pop</span>());
+<span class="variable">show</span>(<span class="variable">mack</span>);</pre><p>The method <a name="key18"></a><code>push</code>, which is associated with arrays, can be used to
+add values to it. It could have been used in the last exercise, as an
+alternative to <code>result[i] = i</code>. Then there is <a name="key19"></a><code>pop</code>, the opposite of
+<code>push</code>: it takes off and returns the last value in the array. <a name="key20"></a><code>join</code>
+builds a single big string from an array of strings. The parameter it
+is given is pasted between the values in the array.</p></div><hr/><div class="block"><p>Coming back to those cats, we now know that an array would be a good
+way to store the archive of e-mails. On this page, the function
+<code>retrieveMails</code> can be used to (magically) get hold of this array.
+Going over them to process them one after another is no rocket science
+anymore either:</p><pre class="code"><span class="keyword">var</span> <span class="variable">mailArchive</span> = <span class="variable">retrieveMails</span>();
+
+<span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">i</span> = <span class="atom">0</span>; <span class="variable">i</span> &lt; <span class="variable">mailArchive</span>.<span class="property">length</span>; <span class="variable">i</span>++) {
+  <span class="keyword">var</span> <span class="variable">email</span> = <span class="variable">mailArchive</span>[<span class="variable">i</span>];
+  <span class="variable">print</span>(<span class="string">&quot;Processing e-mail #&quot;</span>, <span class="variable">i</span>);
+  <span class="comment">// Do more things...</span>
+}</pre><p>We have also decided on a way to represent the set of cats that are
+alive. The next problem, then, is to find the paragraphs in an e-mail
+that start with <code>&quot;born&quot;</code> or <code>&quot;died&quot;</code>.</p></div><hr/><div class="block"><p>The first question that comes up is what exactly a paragraph is. In
+this case, the string value itself can't help us much: JavaScript's
+concept of text does not go any deeper than the 'sequence of
+characters' idea, so we must define paragraphs in those terms.</p><p>Earlier, we saw that there is such a thing as a newline character.
+These are what most people use to split paragraphs. We consider a
+paragraph, then, to be a part of an e-mail that starts at a newline
+character or at the start of the content, and ends at the next newline
+character or at the end of the content.</p><p>And we don't even have to write the algorithm for splitting a string
+into paragraphs ourselves. Strings already have a method named
+<a name="key21"></a><code>split</code>, which is (almost) the opposite of the <code>join</code> method of
+arrays. It splits a string into an array, using the string given as
+its argument to determine in which places to cut.</p><pre class="code"><span class="keyword">var</span> <span class="variable">words</span> = <span class="string">&quot;Cities of the Interior&quot;</span>;
+<span class="variable">show</span>(<span class="variable">words</span>.<span class="property">split</span>(<span class="string">&quot; &quot;</span>));</pre><p>Thus, cutting on newlines (<code>&quot;\n&quot;</code>), can be used to split an e-mail
+into paragraphs.</p></div><hr/><div class="block"><a name="exercise3"></a><div class="exercisenum">Ex. 4.3</div><div class="exercise"><p><code>split</code> and <code>join</code> are not precisely each other's inverse.
+<code>string.split(x).join(x)</code> always produces the original value, but
+<code>array.join(x).split(x)</code> does not. Can you give an example of an array
+where <code>.join(&quot; &quot;).split(&quot; &quot;)</code> produces a different value?</p></div><div class="solution"><pre class="code"><span class="keyword">var</span> <span class="variable">array</span> = [<span class="string">&quot;a&quot;</span>, <span class="string">&quot;b&quot;</span>, <span class="string">&quot;c d&quot;</span>];
+<span class="variable">show</span>(<span class="variable">array</span>.<span class="property">join</span>(<span class="string">&quot; &quot;</span>).<span class="property">split</span>(<span class="string">&quot; &quot;</span>));</pre></div></div><hr/><div class="block"><p>Paragraphs that do not start with either &quot;born&quot; or &quot;died&quot; can be
+ignored by the program. How do we test whether a string starts with a
+certain word? The method <a name="key22"></a><code>charAt</code> can be used to get a specific
+character from a string. <code>x.charAt(0)</code> gives the first character, <code>1</code>
+is the second one, and so on. One way to check whether a string starts
+with &quot;born&quot; is:</p><pre class="code"><span class="keyword">var</span> <span class="variable">paragraph</span> = <span class="string">&quot;born 15-11-2003 (mother Spot): White Fang&quot;</span>;
+<span class="variable">show</span>(<span class="variable">paragraph</span>.<span class="property">charAt</span>(<span class="atom">0</span>) == <span class="string">&quot;b&quot;</span> &amp;&amp; <span class="variable">paragraph</span>.<span class="property">charAt</span>(<span class="atom">1</span>) == <span class="string">&quot;o&quot;</span> &amp;&amp;
+     <span class="variable">paragraph</span>.<span class="property">charAt</span>(<span class="atom">2</span>) == <span class="string">&quot;r&quot;</span> &amp;&amp; <span class="variable">paragraph</span>.<span class="property">charAt</span>(<span class="atom">3</span>) == <span class="string">&quot;n&quot;</span>);</pre><p>But that gets a bit clumsy ― imagine checking for a word of ten
+characters. There is something to be learned here though: when a line
+gets ridiculously long, it can be spread over multiple lines. The
+result can be made easier to read by lining up the start of the new
+line with the first element on the original line that plays a similar
+role.</p><p>Strings also have a method called <a name="key23"></a><code>slice</code>. It copies out a piece of
+the string, starting from the character at the position given by the
+first argument, and ending before (not including) the character at the
+position given by the second one. This allows the check to be written
+in a shorter way.</p><pre class="code"><span class="variable">show</span>(<span class="variable">paragraph</span>.<span class="property">slice</span>(<span class="atom">0</span>, <span class="atom">4</span>) == <span class="string">&quot;born&quot;</span>);</pre></div><hr/><div class="block"><a name="exercise4"></a><div class="exercisenum">Ex. 4.4</div><div class="exercise"><p>Write a function called <code>startsWith</code> that takes two arguments, both
+strings. It returns <code>true</code> when the first argument starts with the
+characters in the second argument, and <code>false</code> otherwise.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">startsWith</span>(<span class="variabledef">string</span>, <span class="variabledef">pattern</span>) {
+  <span class="keyword">return</span> <span class="localvariable">string</span>.<span class="property">slice</span>(<span class="atom">0</span>, <span class="localvariable">pattern</span>.<span class="property">length</span>) == <span class="localvariable">pattern</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">startsWith</span>(<span class="string">&quot;rotation&quot;</span>, <span class="string">&quot;rot&quot;</span>));</pre></div></div><hr/><div class="block"><p>What happens when <code>charAt</code> or <code>slice</code> are used to take a piece of a
+string that does not exist? Will the <code>startsWith</code> I showed still work
+when the pattern is longer than the string it is matched against?</p><pre class="code"><span class="variable">show</span>(<span class="string">&quot;Pip&quot;</span>.<span class="property">charAt</span>(<span class="atom">250</span>));
+<span class="variable">show</span>(<span class="string">&quot;Nop&quot;</span>.<span class="property">slice</span>(<span class="atom">1</span>, <span class="atom">10</span>));</pre><p><code>charAt</code> will return <code>&quot;&quot;</code> when there is no character at the given
+position, and <code>slice</code> will simply leave out the part of the new
+string that does not exist.</p><p>So yes, that version of <code>startsWith</code> works. When <code>startsWith(&quot;Idiots&quot;,
+&quot;Most honoured colleagues&quot;)</code> is called, the call to <code>slice</code> will,
+because <code>string</code> does not have enough characters, always return a
+string that is shorter than <code>pattern</code>. Because of that, the comparison
+with <code>==</code> will return <code>false</code>, which is correct.</p><p>It helps to always take a moment to consider abnormal (but valid)
+inputs for a program. These are usually called <a name="key24"></a>corner cases, and it
+is very common for programs that work perfectly on all the 'normal'
+inputs to screw up on corner cases.</p></div><hr/><div class="block"><p>The only part of the cat-problem that is still unsolved is the
+extraction of names from a paragraph. The algorithm was this:</p><ol><li>Find the colon in the paragraph.</li><li>Take the part after this colon.</li><li>Split this part into separate names by looking for commas.</li></ol><p>This has to happen both for paragraphs that start with <code>&quot;died&quot;</code>, and
+paragraphs that start with <code>&quot;born&quot;</code>. It would be a good idea to put it
+into a function, so that the two pieces of code that handle these
+different kinds of paragraphs can both use it.</p></div><hr/><div class="block"><a name="exercise5"></a><div class="exercisenum">Ex. 4.5</div><div class="exercise"><p>Can you write a function <code>catNames</code> that takes a paragraph as an
+argument and returns an array of names?</p><p>Strings have an <a name="key25"></a><code>indexOf</code> method that can be used to find the
+(first) position of a character or sub-string within that string. Also,
+when <code>slice</code> is given only one argument, it will return the part of
+the string from the given position all the way to the end.</p><p>It can be helpful to use the console to 'explore' functions. For
+example, type <code>&quot;foo: bar&quot;.indexOf(&quot;:&quot;)</code> and see what you get.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">catNames</span>(<span class="variabledef">paragraph</span>) {
+  <span class="keyword">var</span> <span class="variabledef">colon</span> = <span class="localvariable">paragraph</span>.<span class="property">indexOf</span>(<span class="string">&quot;:&quot;</span>);
+  <span class="keyword">return</span> <span class="localvariable">paragraph</span>.<span class="property">slice</span>(<span class="localvariable">colon</span> + <span class="atom">2</span>).<span class="property">split</span>(<span class="string">&quot;, &quot;</span>);
+}
+
+<span class="variable">show</span>(<span class="variable">catNames</span>(<span class="string">&quot;born 20/09/2004 (mother Yellow Bess): &quot;</span> +
+              <span class="string">&quot;Doctor Hobbles the 2nd, Noog&quot;</span>));</pre><p>The tricky part, which the original description of the algorithm
+ignored, is dealing with spaces after the colon and the commas.
+The <code>+ 2</code> used when slicing the string is needed to leave out the
+colon itself and the space after it. The argument to <code>split</code> contains
+both a comma and a space, because that is what the names are really
+separated by, rather than just a comma.</p><p>This function does not do any checking for problems. We assume, in
+this case, that the input is always correct.</p></div></div><hr/><div class="block"><p>All that remains now is putting the pieces together. One way to do
+that looks like this:</p><pre class="code"><span class="keyword">var</span> <span class="variable">mailArchive</span> = <span class="variable">retrieveMails</span>();
+<span class="keyword">var</span> <span class="variable">livingCats</span> = {<span class="string">&quot;Spot&quot;</span>: <span class="atom">true</span>};
+
+<span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">mail</span> = <span class="atom">0</span>; <span class="variable">mail</span> &lt; <span class="variable">mailArchive</span>.<span class="property">length</span>; <span class="variable">mail</span>++) {
+  <span class="keyword">var</span> <span class="variable">paragraphs</span> = <span class="variable">mailArchive</span>[<span class="variable">mail</span>].<span class="property">split</span>(<span class="string">&quot;\n&quot;</span>);
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">paragraph</span> = <span class="atom">0</span>;
+       <span class="variable">paragraph</span> &lt; <span class="variable">paragraphs</span>.<span class="property">length</span>;
+       <span class="variable">paragraph</span>++) {
+    <span class="keyword">if</span> (<span class="variable">startsWith</span>(<span class="variable">paragraphs</span>[<span class="variable">paragraph</span>], <span class="string">&quot;born&quot;</span>)) {
+      <span class="keyword">var</span> <span class="variable">names</span> = <span class="variable">catNames</span>(<span class="variable">paragraphs</span>[<span class="variable">paragraph</span>]);
+      <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">name</span> = <span class="atom">0</span>; <span class="variable">name</span> &lt; <span class="variable">names</span>.<span class="property">length</span>; <span class="variable">name</span>++)
+        <span class="variable">livingCats</span>[<span class="variable">names</span>[<span class="variable">name</span>]] = <span class="atom">true</span>;
+    }
+    <span class="keyword">else</span> <span class="keyword">if</span> (<span class="variable">startsWith</span>(<span class="variable">paragraphs</span>[<span class="variable">paragraph</span>], <span class="string">&quot;died&quot;</span>)) {
+      <span class="keyword">var</span> <span class="variable">names</span> = <span class="variable">catNames</span>(<span class="variable">paragraphs</span>[<span class="variable">paragraph</span>]);
+      <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">name</span> = <span class="atom">0</span>; <span class="variable">name</span> &lt; <span class="variable">names</span>.<span class="property">length</span>; <span class="variable">name</span>++)
+        <span class="keyword">delete</span> <span class="variable">livingCats</span>[<span class="variable">names</span>[<span class="variable">name</span>]];
+    }
+  }
+}
+
+<span class="variable">show</span>(<span class="variable">livingCats</span>);</pre><p>That is quite a big dense chunk of code. We'll look into making it a
+bit lighter in a moment. But first let us look at our results. We know
+how to check whether a specific cat survives:</p><pre class="code"><span class="keyword">if</span> (<span class="string">&quot;Spot&quot;</span> in <span class="variable">livingCats</span>)
+  <span class="variable">print</span>(<span class="string">&quot;Spot lives!&quot;</span>);
+<span class="keyword">else</span>
+  <span class="variable">print</span>(<span class="string">&quot;Good old Spot, may she rest in peace.&quot;</span>);</pre><p>But how do we list all the cats that are alive? The <a name="key26"></a><code>in</code> keyword has
+a somewhat different meaning when it is used together with <code>for</code>:</p><pre class="code"><span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">cat</span> <span class="keyword">in</span> <span class="variable">livingCats</span>)
+  <span class="variable">print</span>(<span class="variable">cat</span>);</pre><p>A loop like that will go over the names of the properties in an
+object, which allows us to enumerate all the names in our set.</p></div><hr/><div class="block"><p>Some pieces of code look like an impenetrable jungle. The example
+solution to the cat problem suffers from this. One way to make some
+light shine through it is to just add some strategic blank lines. This
+makes it look better, but doesn't really solve the problem.</p><p>What is needed here is to break the code up. We already wrote two
+helper functions, <code>startsWith</code> and <code>catNames</code>, which both take care of
+a small, understandable part of the problem. Let us continue doing
+this.</p><pre class="code"><span class="keyword">function</span> <span class="variable">addToSet</span>(<span class="variabledef">set</span>, <span class="variabledef">values</span>) {
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">0</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">values</span>.<span class="property">length</span>; <span class="localvariable">i</span>++)
+    <span class="localvariable">set</span>[<span class="localvariable">values</span>[<span class="localvariable">i</span>]] = <span class="atom">true</span>;
+}
+
+<span class="keyword">function</span> <span class="variable">removeFromSet</span>(<span class="variabledef">set</span>, <span class="variabledef">values</span>) {
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">0</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">values</span>.<span class="property">length</span>; <span class="localvariable">i</span>++)
+    <span class="keyword">delete</span> <span class="localvariable">set</span>[<span class="localvariable">values</span>[<span class="localvariable">i</span>]];
+}</pre><p>These two functions take care of the adding and removing of names from
+the set. That already cuts out the two most inner loops from the
+solution:</p><pre class="code"><span class="keyword">var</span> <span class="variable">livingCats</span> = {<span class="property">Spot</span>: <span class="atom">true</span>};
+
+<span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">mail</span> = <span class="atom">0</span>; <span class="variable">mail</span> &lt; <span class="variable">mailArchive</span>.<span class="property">length</span>; <span class="variable">mail</span>++) {
+  <span class="keyword">var</span> <span class="variable">paragraphs</span> = <span class="variable">mailArchive</span>[<span class="variable">mail</span>].<span class="property">split</span>(<span class="string">&quot;\n&quot;</span>);
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">paragraph</span> = <span class="atom">0</span>;
+       <span class="variable">paragraph</span> &lt; <span class="variable">paragraphs</span>.<span class="property">length</span>;
+       <span class="variable">paragraph</span>++) {
+    <span class="keyword">if</span> (<span class="variable">startsWith</span>(<span class="variable">paragraphs</span>[<span class="variable">paragraph</span>], <span class="string">&quot;born&quot;</span>))
+      <span class="variable">addToSet</span>(<span class="variable">livingCats</span>, <span class="variable">catNames</span>(<span class="variable">paragraphs</span>[<span class="variable">paragraph</span>]));
+    <span class="keyword">else</span> <span class="keyword">if</span> (<span class="variable">startsWith</span>(<span class="variable">paragraphs</span>[<span class="variable">paragraph</span>], <span class="string">&quot;died&quot;</span>))
+      <span class="variable">removeFromSet</span>(<span class="variable">livingCats</span>, <span class="variable">catNames</span>(<span class="variable">paragraphs</span>[<span class="variable">paragraph</span>]));
+  }
+}</pre><p>Quite an improvement, if I may say so myself.</p><p>Why do <code>addToSet</code> and <code>removeFromSet</code> take the set as an argument?
+They could use the variable <code>livingCats</code> directly, if they wanted to.
+The reason is that this way they are not completely tied to our
+current problem. If <code>addToSet</code> directly changed <code>livingCats</code>, it would
+have to be called <code>addCatsToCatSet</code>, or something similar. The way it
+is now, it is a more generally useful tool.</p><p>Even if we are never going to use these functions for anything else,
+which is quite probable, it is useful to write them like this. Because
+they are 'self sufficient', they can be read and understood on their
+own, without needing to know about some external variable called
+<code>livingCats</code>.</p><p>The functions are not pure: They change the object passed as their
+<code>set</code> argument. This makes them slightly trickier than real pure
+functions, but still a lot less confusing than functions that run amok
+and change any value or variable they please.</p></div><hr/><div class="block"><p>We continue breaking the algorithm into pieces:</p><pre class="code"><span class="keyword">function</span> <span class="variable">findLivingCats</span>() {
+  <span class="keyword">var</span> <span class="variabledef">mailArchive</span> = <span class="variable">retrieveMails</span>();
+  <span class="keyword">var</span> <span class="variabledef">livingCats</span> = {<span class="string">&quot;Spot&quot;</span>: <span class="atom">true</span>};
+
+  <span class="keyword">function</span> <span class="variabledef">handleParagraph</span>(<span class="variabledef">paragraph</span>) {
+    <span class="keyword">if</span> (<span class="variable">startsWith</span>(<span class="localvariable">paragraph</span>, <span class="string">&quot;born&quot;</span>))
+      <span class="variable">addToSet</span>(<span class="localvariable">livingCats</span>, <span class="variable">catNames</span>(<span class="localvariable">paragraph</span>));
+    <span class="keyword">else</span> <span class="keyword">if</span> (<span class="variable">startsWith</span>(<span class="localvariable">paragraph</span>, <span class="string">&quot;died&quot;</span>))
+      <span class="variable">removeFromSet</span>(<span class="localvariable">livingCats</span>, <span class="variable">catNames</span>(<span class="localvariable">paragraph</span>));
+  }
+
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">mail</span> = <span class="atom">0</span>; <span class="localvariable">mail</span> &lt; <span class="localvariable">mailArchive</span>.<span class="property">length</span>; <span class="localvariable">mail</span>++) {
+    <span class="keyword">var</span> <span class="variabledef">paragraphs</span> = <span class="localvariable">mailArchive</span>[<span class="localvariable">mail</span>].<span class="property">split</span>(<span class="string">&quot;\n&quot;</span>);
+    <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">0</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">paragraphs</span>.<span class="property">length</span>; <span class="localvariable">i</span>++)
+      <span class="localvariable">handleParagraph</span>(<span class="localvariable">paragraphs</span>[<span class="localvariable">i</span>]);
+  }
+  <span class="keyword">return</span> <span class="localvariable">livingCats</span>;
+}
+
+<span class="keyword">var</span> <span class="variable">howMany</span> = <span class="atom">0</span>;
+<span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">cat</span> <span class="keyword">in</span> <span class="variable">findLivingCats</span>())
+  <span class="variable">howMany</span>++;
+<span class="variable">print</span>(<span class="string">&quot;There are &quot;</span>, <span class="variable">howMany</span>, <span class="string">&quot; cats.&quot;</span>);</pre><p>The whole algorithm is now encapsulated by a function. This means that
+it does not leave a mess after it runs: <code>livingCats</code> is now a local
+variable in the function, instead of a top-level one, so it only
+exists while the function runs. The code that needs this set can call
+<code>findLivingCats</code> and use the value it returns.</p><p>It seemed to me that making <code>handleParagraph</code> a separate function also
+cleared things up. But this one is so closely tied to the
+cat-algorithm that it is meaningless in any other situation. On top of
+that, it needs access to the <code>livingCats</code> variable. Thus, it is a
+perfect candidate to be a function-inside-a-function. When it lives
+inside <code>findLivingCats</code>, it is clear that it is only relevant there,
+and it has access to the variables of its parent function.</p><p>This solution is actually <em>bigger</em> than the previous one. Still, it is
+tidier and I hope you'll agree that it is easier to read.</p></div><hr/><div class="block"><p>The program still ignores a lot of the information that is contained
+in the e-mails. There are birth-dates, dates of death, and the names
+of mothers in there.</p><p>To start with the dates: What would be a good way to store a date? We
+could make an object with three properties, <code>year</code>, <code>month</code>, and
+<code>day</code>, and store numbers in them.</p><pre class="code"><span class="keyword">var</span> <span class="variable">when</span> = {<span class="property">year</span>: <span class="atom">1980</span>, <span class="property">month</span>: <span class="atom">2</span>, <span class="property">day</span>: <span class="atom">1</span>};</pre><p>But JavaScript already provides a kind of object for this purpose.
+Such an object can be created by using the keyword <a name="key27"></a><code>new</code>:</p><pre class="code"><span class="keyword">var</span> <span class="variable">when</span> = <span class="keyword">new</span> <span class="variable">Date</span>(<span class="atom">1980</span>, <span class="atom">1</span>, <span class="atom">1</span>);
+<span class="variable">show</span>(<span class="variable">when</span>);</pre><p>Just like the notation with braces and colons we have already
+seen, <code>new</code> is a way to create object values. Instead of specifying
+all the property names and values, a function is used to build up the
+object. This makes it possible to define a kind of standard procedure
+for creating objects. Functions like this are called <a name="key28"></a>constructors,
+and in <a href="chapter8.html">chapter 8</a> we will see how to write them.</p><p>The <a name="key29"></a><code>Date</code> constructor can be used in different ways.</p><pre class="code"><span class="variable">show</span>(<span class="keyword">new</span> <span class="variable">Date</span>());
+<span class="variable">show</span>(<span class="keyword">new</span> <span class="variable">Date</span>(<span class="atom">1980</span>, <span class="atom">1</span>, <span class="atom">1</span>));
+<span class="variable">show</span>(<span class="keyword">new</span> <span class="variable">Date</span>(<span class="atom">2007</span>, <span class="atom">2</span>, <span class="atom">30</span>, <span class="atom">8</span>, <span class="atom">20</span>, <span class="atom">30</span>));</pre><p>As you can see, these objects can store a time of day as well as a
+date. When not given any arguments, an object representing the current
+time and date is created. Arguments can be given to ask for a specific
+date and time. The order of the arguments is year, month, day, hour,
+minute, second, milliseconds. These last four are optional, they
+become 0 when not given.</p><p>The month numbers these objects use go from 0 to 11, which can be
+confusing. Especially since day numbers <em>do</em> start from 1.</p></div><hr/><div class="block"><p>The content of a <code>Date</code> object can be inspected with a number of
+<code>get...</code> methods.</p><pre class="code"><span class="keyword">var</span> <span class="variable">today</span> = <span class="keyword">new</span> <span class="variable">Date</span>();
+<span class="variable">print</span>(<span class="string">&quot;Year: &quot;</span>, <span class="variable">today</span>.<span class="property">getFullYear</span>(), <span class="string">&quot;, month: &quot;</span>,
+      <span class="variable">today</span>.<span class="property">getMonth</span>(), <span class="string">&quot;, day: &quot;</span>, <span class="variable">today</span>.<span class="property">getDate</span>());
+<span class="variable">print</span>(<span class="string">&quot;Hour: &quot;</span>, <span class="variable">today</span>.<span class="property">getHours</span>(), <span class="string">&quot;, minutes: &quot;</span>,
+      <span class="variable">today</span>.<span class="property">getMinutes</span>(), <span class="string">&quot;, seconds: &quot;</span>, <span class="variable">today</span>.<span class="property">getSeconds</span>());
+<span class="variable">print</span>(<span class="string">&quot;Day of week: &quot;</span>, <span class="variable">today</span>.<span class="property">getDay</span>());</pre><p>All of these, except for <code>getDay</code>, also have a <code>set...</code> variant that
+can be used to change the value of the date object.</p><p>Inside the object, a date is represented by the amount of milliseconds
+it is away from January 1st 1970. You can imagine this is quite a
+large number.</p><pre class="code"><span class="keyword">var</span> <span class="variable">today</span> = <span class="keyword">new</span> <span class="variable">Date</span>();
+<span class="variable">show</span>(<span class="variable">today</span>.<span class="property">getTime</span>());</pre><p>A very useful thing to do with dates is comparing them.</p><pre class="code"><span class="keyword">var</span> <span class="variable">wallFall</span> = <span class="keyword">new</span> <span class="variable">Date</span>(<span class="atom">1989</span>, <span class="atom">10</span>, <span class="atom">9</span>);
+<span class="keyword">var</span> <span class="variable">gulfWarOne</span> = <span class="keyword">new</span> <span class="variable">Date</span>(<span class="atom">1990</span>, <span class="atom">6</span>, <span class="atom">2</span>);
+<span class="variable">show</span>(<span class="variable">wallFall</span> &lt; <span class="variable">gulfWarOne</span>);
+<span class="variable">show</span>(<span class="variable">wallFall</span> == <span class="variable">wallFall</span>);
+<span class="comment">// but</span>
+<span class="variable">show</span>(<span class="variable">wallFall</span> == <span class="keyword">new</span> <span class="variable">Date</span>(<span class="atom">1989</span>, <span class="atom">10</span>, <span class="atom">9</span>));</pre><p>Comparing dates with <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, and <code>&gt;=</code> does exactly what you
+would expect. When a date object is compared to itself with <code>==</code> the
+result is <code>true</code>, which is also good. But when <a name="key30"></a><code>==</code> is used to
+compare a date object to a different, equal date object, we get
+<code>false</code>. Huh?</p><p>As mentioned earlier, <code>==</code> will return <code>false</code> when comparing two
+different objects, even if they contain the same properties. This is a
+bit clumsy and error-prone here, since one would expect <code>&gt;=</code> and <code>==</code>
+to behave in a more or less similar way. Testing whether two dates are
+equal can be done like this:</p><pre class="code"><span class="keyword">var</span> <span class="variable">wallFall1</span> = <span class="keyword">new</span> <span class="variable">Date</span>(<span class="atom">1989</span>, <span class="atom">10</span>, <span class="atom">9</span>),
+    <span class="variable">wallFall2</span> = <span class="keyword">new</span> <span class="variable">Date</span>(<span class="atom">1989</span>, <span class="atom">10</span>, <span class="atom">9</span>);
+<span class="variable">show</span>(<span class="variable">wallFall1</span>.<span class="property">getTime</span>() == <span class="variable">wallFall2</span>.<span class="property">getTime</span>());</pre></div><hr/><div class="block"><p>In addition to a date and time, <code>Date</code> objects also contain
+information about a <a name="key31"></a>timezone. When it is one o'clock in Amsterdam,
+it can, depending on the time of year, be noon in London, and seven in
+the morning in New York. Such times can only be compared when you take
+their time zones into account. The <a name="key32"></a><code>getTimezoneOffset</code> function of a
+<code>Date</code> can be used to find out how many minutes it differs from GMT
+(Greenwich Mean Time).</p><pre class="code"><span class="keyword">var</span> <span class="variable">now</span> = <span class="keyword">new</span> <span class="variable">Date</span>();
+<span class="variable">print</span>(<span class="variable">now</span>.<span class="property">getTimezoneOffset</span>());</pre></div><hr/><div class="block"><a name="exercise6"></a><div class="exercisenum">Ex. 4.6</div><div class="exercise"><pre class="preformatted">&quot;died 27/04/2006: Black Leclère&quot;</pre><p>The date part is always in the exact same place of a paragraph. How
+convenient. Write a function <code>extractDate</code> that takes such a paragraph
+as its argument, extracts the date, and returns it as a date object.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">extractDate</span>(<span class="variabledef">paragraph</span>) {
+  <span class="keyword">function</span> <span class="variabledef">numberAt</span>(<span class="variabledef">start</span>, <span class="variabledef">length</span>) {
+    <span class="keyword">return</span> <span class="variable">Number</span>(<span class="localvariable">paragraph</span>.<span class="property">slice</span>(<span class="localvariable">start</span>, <span class="localvariable">start</span> + <span class="localvariable">length</span>));
+  }
+  <span class="keyword">return</span> <span class="keyword">new</span> <span class="variable">Date</span>(<span class="localvariable">numberAt</span>(<span class="atom">11</span>, <span class="atom">4</span>), <span class="localvariable">numberAt</span>(<span class="atom">8</span>, <span class="atom">2</span>) - <span class="atom">1</span>,
+                  <span class="localvariable">numberAt</span>(<span class="atom">5</span>, <span class="atom">2</span>));
+}
+
+<span class="variable">show</span>(<span class="variable">extractDate</span>(<span class="string">&quot;died 27-04-2006: Black Leclère&quot;</span>));</pre><p>It would work without the calls to <code>Number</code>, but as mentioned earlier,
+I prefer not to use strings as if they are numbers. The inner function
+was introduced to prevent having to repeat the <code>Number</code> and <code>slice</code>
+part three times.</p><p>Note the <code>- 1</code> for the month number. Like most people, Aunt Emily
+counts her months from 1, so we have to adjust the value before giving
+it to the <code>Date</code> constructor. (The day number does not have this
+problem, since <code>Date</code> objects count days in the usual human way.)</p><p>In <a href="chapter10.html">chapter 10</a> we will see a more practical and robust way of extracting
+pieces from strings that have a fixed structure.</p></div></div><hr/><div class="block"><p>Storing cats will work differently from now on. Instead of just
+putting the value <code>true</code> into the set, we store an object with
+information about the cat. When a cat dies, we do not remove it from
+the set, we just add a property <code>death</code> to the object to store the
+date on which the creature died.</p><p>This means our <code>addToSet</code> and <code>removeFromSet</code> functions have become
+useless. Something similar is needed, but it must also store
+birth-dates and, later, the mother's name.</p><pre class="code"><span class="keyword">function</span> <span class="variable">catRecord</span>(<span class="variabledef">name</span>, <span class="variabledef">birthdate</span>, <span class="variabledef">mother</span>) {
+  <span class="keyword">return</span> {<span class="property">name</span>: <span class="localvariable">name</span>, <span class="property">birth</span>: <span class="localvariable">birthdate</span>, <span class="property">mother</span>: <span class="localvariable">mother</span>};
+}
+
+<span class="keyword">function</span> <span class="variable">addCats</span>(<span class="variabledef">set</span>, <span class="variabledef">names</span>, <span class="variabledef">birthdate</span>, <span class="variabledef">mother</span>) {
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">0</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">names</span>.<span class="property">length</span>; <span class="localvariable">i</span>++)
+    <span class="localvariable">set</span>[<span class="localvariable">names</span>[<span class="localvariable">i</span>]] = <span class="variable">catRecord</span>(<span class="localvariable">names</span>[<span class="localvariable">i</span>], <span class="localvariable">birthdate</span>, <span class="localvariable">mother</span>);
+}
+<span class="keyword">function</span> <span class="variable">deadCats</span>(<span class="variabledef">set</span>, <span class="variabledef">names</span>, <span class="variabledef">deathdate</span>) {
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">0</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">names</span>.<span class="property">length</span>; <span class="localvariable">i</span>++)
+    <span class="localvariable">set</span>[<span class="localvariable">names</span>[<span class="localvariable">i</span>]].<span class="property">death</span> = <span class="localvariable">deathdate</span>;
+}</pre><p><code>catRecord</code> is a separate function for creating these storage objects.
+It might be useful in other situations, such as creating the object
+for Spot. 'Record' is a term often used for objects like this, which
+are used to group a limited number of values.</p></div><hr/><div class="block"><p>So let us try to extract the names of the mother cats from the
+paragraphs.</p><pre class="preformatted">&quot;born 15/11/2003 (mother Spot): White Fang&quot;</pre><p>One way to do this would be...</p><pre class="code"><span class="keyword">function</span> <span class="variable">extractMother</span>(<span class="variabledef">paragraph</span>) {
+  <span class="keyword">var</span> <span class="variabledef">start</span> = <span class="localvariable">paragraph</span>.<span class="property">indexOf</span>(<span class="string">&quot;(mother &quot;</span>) + <span class="string">&quot;(mother &quot;</span>.<span class="property">length</span>;
+  <span class="keyword">var</span> <span class="variabledef">end</span> = <span class="localvariable">paragraph</span>.<span class="property">indexOf</span>(<span class="string">&quot;)&quot;</span>);
+  <span class="keyword">return</span> <span class="localvariable">paragraph</span>.<span class="property">slice</span>(<span class="localvariable">start</span>, <span class="localvariable">end</span>);
+}
+
+<span class="variable">show</span>(<span class="variable">extractMother</span>(<span class="string">&quot;born 15/11/2003 (mother Spot): White Fang&quot;</span>));</pre><p>Notice how the start position has to be adjusted for the length of
+<code>&quot;(mother &quot;</code>, because <code>indexOf</code> returns the position of the start of
+the pattern, not its end.</p></div><hr/><div class="block"><a name="exercise7"></a><div class="exercisenum">Ex. 4.7</div><div class="exercise"><p>The thing that <code>extractMother</code> does can be expressed in a more general
+way. Write a function <code>between</code> that takes three arguments, all of
+which are strings. It will return the part of the first argument that
+occurs between the patterns given by the second and the third
+arguments.</p><p>So <code>between(&quot;born 15/11/2003 (mother Spot): White Fang&quot;, &quot;(mother &quot;,
+&quot;)&quot;)</code> gives <code>&quot;Spot&quot;</code>.</p><p><code>between(&quot;bu ] boo [ bah ] gzz&quot;, &quot;[ &quot;, &quot; ]&quot;)</code> returns <code>&quot;bah&quot;</code>.</p><p>To make that second test work, it can be useful to know that <code>indexOf</code>
+can be given a second, optional parameter that specifies at which
+point it should start searching.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">between</span>(<span class="variabledef">string</span>, <span class="variabledef">start</span>, <span class="variabledef">end</span>) {
+  <span class="keyword">var</span> <span class="variabledef">startAt</span> = <span class="localvariable">string</span>.<span class="property">indexOf</span>(<span class="localvariable">start</span>) + <span class="localvariable">start</span>.<span class="property">length</span>;
+  <span class="keyword">var</span> <span class="variabledef">endAt</span> = <span class="localvariable">string</span>.<span class="property">indexOf</span>(<span class="localvariable">end</span>, <span class="localvariable">startAt</span>);
+  <span class="keyword">return</span> <span class="localvariable">string</span>.<span class="property">slice</span>(<span class="localvariable">startAt</span>, <span class="localvariable">endAt</span>);
+}
+<span class="variable">show</span>(<span class="variable">between</span>(<span class="string">&quot;bu ] boo [ bah ] gzz&quot;</span>, <span class="string">&quot;[ &quot;</span>, <span class="string">&quot; ]&quot;</span>));</pre></div></div><hr/><div class="block"><p>Having <code>between</code> makes it possible to express extractMother in a
+simpler way:</p><pre class="code"><span class="keyword">function</span> <span class="variable">extractMother</span>(<span class="variabledef">paragraph</span>) {
+  <span class="keyword">return</span> <span class="variable">between</span>(<span class="localvariable">paragraph</span>, <span class="string">&quot;(mother &quot;</span>, <span class="string">&quot;)&quot;</span>);
+}</pre></div><hr/><div class="block"><p>The new, improved cat-algorithm looks like this:</p><pre class="code"><span class="keyword">function</span> <span class="variable">findCats</span>() {
+  <span class="keyword">var</span> <span class="variabledef">mailArchive</span> = <span class="variable">retrieveMails</span>();
+  <span class="keyword">var</span> <span class="variabledef">cats</span> = {<span class="string">&quot;Spot&quot;</span>: <span class="variable">catRecord</span>(<span class="string">&quot;Spot&quot;</span>, <span class="keyword">new</span> <span class="variable">Date</span>(<span class="atom">1997</span>, <span class="atom">2</span>, <span class="atom">5</span>),
+              <span class="string">&quot;unknown&quot;</span>)};
+
+  <span class="keyword">function</span> <span class="variabledef">handleParagraph</span>(<span class="variabledef">paragraph</span>) {
+    <span class="keyword">if</span> (<span class="variable">startsWith</span>(<span class="localvariable">paragraph</span>, <span class="string">&quot;born&quot;</span>))
+      <span class="variable">addCats</span>(<span class="localvariable">cats</span>, <span class="variable">catNames</span>(<span class="localvariable">paragraph</span>), <span class="variable">extractDate</span>(<span class="localvariable">paragraph</span>),
+              <span class="variable">extractMother</span>(<span class="localvariable">paragraph</span>));
+    <span class="keyword">else</span> <span class="keyword">if</span> (<span class="variable">startsWith</span>(<span class="localvariable">paragraph</span>, <span class="string">&quot;died&quot;</span>))
+      <span class="variable">deadCats</span>(<span class="localvariable">cats</span>, <span class="variable">catNames</span>(<span class="localvariable">paragraph</span>), <span class="variable">extractDate</span>(<span class="localvariable">paragraph</span>));
+  }
+
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">mail</span> = <span class="atom">0</span>; <span class="localvariable">mail</span> &lt; <span class="localvariable">mailArchive</span>.<span class="property">length</span>; <span class="localvariable">mail</span>++) {
+    <span class="keyword">var</span> <span class="variabledef">paragraphs</span> = <span class="localvariable">mailArchive</span>[<span class="localvariable">mail</span>].<span class="property">split</span>(<span class="string">&quot;\n&quot;</span>);
+    <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">0</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">paragraphs</span>.<span class="property">length</span>; <span class="localvariable">i</span>++)
+      <span class="localvariable">handleParagraph</span>(<span class="localvariable">paragraphs</span>[<span class="localvariable">i</span>]);
+  }
+  <span class="keyword">return</span> <span class="localvariable">cats</span>;
+}
+
+<span class="keyword">var</span> <span class="variable">catData</span> = <span class="variable">findCats</span>();</pre><p>Having that extra data allows us to finally have a clue about the cats
+aunt Emily talks about. A function like this could be useful:</p><pre class="code"><span class="keyword">function</span> <span class="variable">formatDate</span>(<span class="variabledef">date</span>) {
+  <span class="keyword">return</span> <span class="localvariable">date</span>.<span class="property">getDate</span>() + <span class="string">&quot;/&quot;</span> + (<span class="localvariable">date</span>.<span class="property">getMonth</span>() + <span class="atom">1</span>) +
+         <span class="string">&quot;/&quot;</span> + <span class="localvariable">date</span>.<span class="property">getFullYear</span>();
+}
+
+<span class="keyword">function</span> <span class="variable">catInfo</span>(<span class="variabledef">data</span>, <span class="variabledef">name</span>) {
+  <span class="keyword">if</span> (!(<span class="localvariable">name</span> in <span class="localvariable">data</span>))
+    <span class="keyword">return</span> <span class="string">&quot;No cat by the name of &quot;</span> + <span class="localvariable">name</span> + <span class="string">&quot; is known.&quot;</span>;
+
+  <span class="keyword">var</span> <span class="variabledef">cat</span> = <span class="localvariable">data</span>[<span class="localvariable">name</span>];
+  <span class="keyword">var</span> <span class="variabledef">message</span> = <span class="localvariable">name</span> + <span class="string">&quot;, born &quot;</span> + <span class="variable">formatDate</span>(<span class="localvariable">cat</span>.<span class="property">birth</span>) +
+                <span class="string">&quot; from mother &quot;</span> + <span class="localvariable">cat</span>.<span class="property">mother</span>;
+  <span class="keyword">if</span> (<span class="string">&quot;death&quot;</span> in <span class="localvariable">cat</span>)
+    <span class="localvariable">message</span> += <span class="string">&quot;, died &quot;</span> + <span class="variable">formatDate</span>(<span class="localvariable">cat</span>.<span class="property">death</span>);
+  <span class="keyword">return</span> <span class="localvariable">message</span> + <span class="string">&quot;.&quot;</span>;
+}
+
+<span class="variable">print</span>(<span class="variable">catInfo</span>(<span class="variable">catData</span>, <span class="string">&quot;Fat Igor&quot;</span>));</pre><p>The first <code>return</code> statement in <code>catInfo</code> is used as an escape hatch.
+If there is no data about the given cat, the rest of the function is
+meaningless, so we immediately return a value, which prevents the rest
+of the code from running.</p><p>In the past, certain groups of programmers considered functions that
+contain multiple <code>return</code> statements sinful. The idea was that this
+made it hard to see which code was executed and which code was not.
+Other techniques, which will be discussed in <a href="chapter5.html">chapter 5</a>, have made the
+reasons behind this idea more or less obsolete, but you might still
+occasionally come across someone who will criticise the use of
+'shortcut' return statements.</p></div><hr/><div class="block"><a name="exercise8"></a><div class="exercisenum">Ex. 4.8</div><div class="exercise"><p>The <code>formatDate</code> function used by <code>catInfo</code> does not add a zero before
+the month and the day part when these are only one digit long. Write a
+new version that does this.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">formatDate</span>(<span class="variabledef">date</span>) {
+  <span class="keyword">function</span> <span class="variabledef">pad</span>(<span class="variabledef">number</span>) {
+    <span class="keyword">if</span> (<span class="localvariable">number</span> &lt; <span class="atom">10</span>)
+      <span class="keyword">return</span> <span class="string">&quot;0&quot;</span> + <span class="localvariable">number</span>;
+    <span class="keyword">else</span>
+      <span class="keyword">return</span> <span class="localvariable">number</span>;
+  }
+  <span class="keyword">return</span> <span class="localvariable">pad</span>(<span class="localvariable">date</span>.<span class="property">getDate</span>()) + <span class="string">&quot;/&quot;</span> + <span class="localvariable">pad</span>(<span class="localvariable">date</span>.<span class="property">getMonth</span>() + <span class="atom">1</span>) +
+             <span class="string">&quot;/&quot;</span> + <span class="localvariable">date</span>.<span class="property">getFullYear</span>();
+}
+<span class="variable">print</span>(<span class="variable">formatDate</span>(<span class="keyword">new</span> <span class="variable">Date</span>(<span class="atom">2000</span>, <span class="atom">0</span>, <span class="atom">1</span>)));</pre></div></div><hr/><div class="block"><a name="exercise9"></a><div class="exercisenum">Ex. 4.9</div><div class="exercise"><p>Write a function <code>oldestCat</code> which, given an object containing cats as
+its argument, returns the name of the oldest living cat.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">oldestCat</span>(<span class="variabledef">data</span>) {
+  <span class="keyword">var</span> <span class="variabledef">oldest</span> = <span class="atom">null</span>;
+
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">name</span> <span class="keyword">in</span> <span class="localvariable">data</span>) {
+    <span class="keyword">var</span> <span class="variabledef">cat</span> = <span class="localvariable">data</span>[<span class="localvariable">name</span>];
+    <span class="keyword">if</span> (!(<span class="string">&quot;death&quot;</span> in <span class="localvariable">cat</span>) &amp;&amp;
+        (<span class="localvariable">oldest</span> == <span class="atom">null</span> || <span class="localvariable">oldest</span>.<span class="property">birth</span> &gt; <span class="localvariable">cat</span>.<span class="property">birth</span>))
+      <span class="localvariable">oldest</span> = <span class="localvariable">cat</span>;
+  }
+
+  <span class="keyword">if</span> (<span class="localvariable">oldest</span> == <span class="atom">null</span>)
+    <span class="keyword">return</span> <span class="atom">null</span>;
+  <span class="keyword">else</span>
+    <span class="keyword">return</span> <span class="localvariable">oldest</span>.<span class="property">name</span>;
+}
+
+<span class="variable">print</span>(<span class="variable">oldestCat</span>(<span class="variable">catData</span>));</pre><p>The condition in the <code>if</code> statement might seem a little intimidating.
+It can be read as 'only store the current cat in the variable <code>oldest</code>
+if it is not dead, and <code>oldest</code> is either <code>null</code> or a cat that was
+born after the current cat'.</p><p>Note that this function returns <code>null</code> when there are no living cats
+in <code>data</code>. What does your solution do in that case?</p></div></div><hr/><div class="block"><p>Now that we are familiar with arrays, I can show you something
+related. Whenever a function is called, a special variable named
+<a name="key33"></a><code>arguments</code> is added to the environment in which the function body
+runs. This variable refers to an object that resembles an array. It
+has a property <code>0</code> for the first argument, <code>1</code> for the second, and so
+on for every argument the function was given. It also has a <a name="key34"></a><code>length</code>
+property.</p><p>This object is not a real array though, it does not have methods like
+<code>push</code>, and it does not automatically update its <code>length</code> property
+when you add something to it. Why not, I never really found out, but
+this is something one needs to be aware of.</p><pre class="code"><span class="keyword">function</span> <span class="variable">argumentCounter</span>() {
+  <span class="variable">print</span>(<span class="string">&quot;You gave me &quot;</span>, <span class="localvariable">arguments</span>.<span class="property">length</span>, <span class="string">&quot; arguments.&quot;</span>);
+}
+<span class="variable">argumentCounter</span>(<span class="string">&quot;Death&quot;</span>, <span class="string">&quot;Famine&quot;</span>, <span class="string">&quot;Pestilence&quot;</span>);</pre><p>Some functions can take any number of arguments, like <code>print</code> does.
+These typically loop over the values in the <code>arguments</code> object to do
+something with them. Others can take optional arguments which, when
+not given by the caller, get some sensible default value.</p><pre class="code"><span class="keyword">function</span> <span class="variable">add</span>(<span class="variabledef">number</span>, <span class="variabledef">howmuch</span>) {
+  <span class="keyword">if</span> (<span class="localvariable">arguments</span>.<span class="property">length</span> &lt; <span class="atom">2</span>)
+    <span class="localvariable">howmuch</span> = <span class="atom">1</span>;
+  <span class="keyword">return</span> <span class="localvariable">number</span> + <span class="localvariable">howmuch</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">add</span>(<span class="atom">6</span>));
+<span class="variable">show</span>(<span class="variable">add</span>(<span class="atom">6</span>, <span class="atom">4</span>));</pre></div><hr/><div class="block"><a name="exercise10"></a><div class="exercisenum">Ex. 4.10</div><div class="exercise"><p>Extend the <code>range</code> function from <a href="chapter4.html#exercise2">exercise 4.2</a> to take a second, optional
+argument. If only one argument is given, it behaves as earlier and
+produces a range from 0 to the given number. If two arguments are
+given, the first indicates the start of the range, the second the end.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">range</span>(<span class="variabledef">start</span>, <span class="variabledef">end</span>) {
+  <span class="keyword">if</span> (<span class="localvariable">arguments</span>.<span class="property">length</span> &lt; <span class="atom">2</span>) {
+    <span class="localvariable">end</span> = <span class="localvariable">start</span>;
+    <span class="localvariable">start</span> = <span class="atom">0</span>;
+  }
+  <span class="keyword">var</span> <span class="variabledef">result</span> = [];
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="localvariable">start</span>; <span class="localvariable">i</span> &lt;= <span class="localvariable">end</span>; <span class="localvariable">i</span>++)
+    <span class="localvariable">result</span>.<span class="property">push</span>(<span class="localvariable">i</span>);
+  <span class="keyword">return</span> <span class="localvariable">result</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">range</span>(<span class="atom">4</span>));
+<span class="variable">show</span>(<span class="variable">range</span>(<span class="atom">2</span>, <span class="atom">4</span>));</pre><p>The optional argument does not work precisely like the one in the
+<code>add</code> example above. When it is not given, the first argument takes
+the role of <code>end</code>, and <code>start</code> becomes <code>0</code>.</p></div></div><hr/><div class="block"><a name="exercise11"></a><div class="exercisenum">Ex. 4.11</div><div class="exercise"><p>You may remember this line of code from the introduction:</p><pre class="code invalid"><span class="variable">print</span>(<span class="variable">sum</span>(<span class="variable">range</span>(<span class="atom">1</span>, <span class="atom">10</span>)));</pre><p>We have <code>range</code> now. All we need to make this line work is a <code>sum</code>
+function. This function takes an array of numbers, and returns their
+sum. Write it, it should be easy.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">sum</span>(<span class="variabledef">numbers</span>) {
+  <span class="keyword">var</span> <span class="variabledef">total</span> = <span class="atom">0</span>;
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">0</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">numbers</span>.<span class="property">length</span>; <span class="localvariable">i</span>++)
+    <span class="localvariable">total</span> += <span class="localvariable">numbers</span>[<span class="localvariable">i</span>];
+  <span class="keyword">return</span> <span class="localvariable">total</span>;
+}
+
+<span class="variable">print</span>(<span class="variable">sum</span>(<span class="variable">range</span>(<span class="atom">1</span>, <span class="atom">10</span>)));</pre></div></div><hr/><div class="block"><p><a href="chapter2.html">Chapter 2</a> mentioned the functions <code>Math.max</code> and <code>Math.min</code>.
+With what you know now, you will notice that these are really the
+properties <code>max</code> and <code>min</code> of the object stored under the name
+<a name="key35"></a><code>Math</code>. This is another role that objects can play: A warehouse
+holding a number of related values.</p><p>There are quite a lot of values inside <code>Math</code>, if they would all have
+been placed directly into the global environment they would, as it is
+called, pollute it. The more names have been taken, the more likely
+one is to accidentally overwrite the value of some variable. For
+example, it is not a far shot to want to name something <code>max</code>.</p><p>Most languages will stop you, or at least warn you, when you are
+defining a variable with a name that is already taken. Not JavaScript.</p><p>In any case, one can find a whole outfit of mathematical functions and
+constants inside <code>Math</code>. All the trigonometric functions are there ―
+<code>cos</code>, <code>sin</code>, <code>tan</code>, <code>acos</code>, <code>asin</code>, <code>atan</code>. π and e, which are
+written with all capital letters (<code>PI</code> and <code>E</code>), which was, at one
+time, a fashionable way to indicate something is a constant. <code>pow</code> is
+a good replacement for the <code>power</code> functions we have been writing, it
+also accepts negative and fractional exponents. <code>sqrt</code> takes square
+roots. <code>max</code> and <code>min</code> can give the maximum or minimum of two values.
+<a name="key36"></a><a name="key37"></a><a name="key38"></a><code>round</code>, <code>floor</code>, and
+<code>ceil</code> will round numbers to the closest whole number, the whole
+number below it, and the whole number above it respectively.</p><p>There are a number of other values in <code>Math</code>, but this text is an
+introduction, not a <a name="key39"></a>reference. References are what you look at when
+you suspect something exists in the language, but need to find out
+what it is called or how it works exactly. Unfortunately, there is no
+one comprehensive complete reference for JavaScript. This is mostly
+because its current form is the result of a chaotic process of
+different browsers adding different extensions at different times. The
+ECMA standard document that was mentioned in the introduction provides
+a solid documentation of the basic language, but is more or less
+unreadable. For most things, your best bet is the <a href="https://developer.mozilla.org/en/JavaScript/Reference/">Mozilla Developer
+Network</a>.</p></div><hr/><div class="block"><p>Maybe you already thought of a way to find out what is available in
+the <code>Math</code> object:</p><pre class="code"><span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">name</span> <span class="keyword">in</span> <span class="variable">Math</span>)
+  <span class="variable">print</span>(<span class="variable">name</span>);</pre><p>But alas, nothing appears. Similarly, when you do this:</p><pre class="code"><span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">name</span> <span class="keyword">in</span> [<span class="string">&quot;Huey&quot;</span>, <span class="string">&quot;Dewey&quot;</span>, <span class="string">&quot;Loui&quot;</span>])
+  <span class="variable">print</span>(<span class="variable">name</span>);</pre><p>You only see <code>0</code>, <code>1</code>, and <code>2</code>, not <code>length</code>, or <code>push</code>, or <code>join</code>,
+which are definitely also in there. Apparently, some properties of
+objects are hidden<a name="key40"></a>. There is a good reason for
+this: All objects have a few methods, for example <a name="key41"></a><code>toString</code>, which
+converts the object into some kind of relevant string, and you do not
+want to see those when you are, for example, looking for the cats that
+you stored in the object.</p><p>Why the properties of <code>Math</code> are hidden is unclear to me. Someone
+probably wanted it to be a mysterious kind of object.</p><p>All properties your programs add to objects are visible. There is no
+way to make them hidden, which is unfortunate because, as we will see
+in <a href="chapter8.html">chapter 8</a>, it would be nice to be able to add methods to objects
+without having them show up in our <code>for</code>/<code>in</code> loops.</p></div><hr/><div class="block"><p><a name="key42"></a>Some properties are read-only, you can get
+their value but not change it. For example, the properties of a string
+value are all read-only.</p><p>Other properties can be 'active'. Changing them
+causes <em>things</em> to happen. For example, lowering the length of an
+array causes excess elements to be discarded:</p><pre class="code"><span class="keyword">var</span> <span class="variable">array</span> = [<span class="string">&quot;Heaven&quot;</span>, <span class="string">&quot;Earth&quot;</span>, <span class="string">&quot;Man&quot;</span>];
+<span class="variable">array</span>.<span class="property">length</span> = <span class="atom">2</span>;
+<span class="variable">show</span>(<span class="variable">array</span>);</pre></div><ol class="footnotes"><li><a name="footnote1"></a>There are a few subtle problems with this approach, which will be
+discussed and solved in <a href="chapter8.html">chapter 8</a>. For this chapter, it works well enough.</li></ol><div class="navigation"><a href="chapter3.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter5.html">Next chapter &gt;&gt;</a></div><div class="footer">© <a href="mailto:marijnh@gmail.com">Marijn Haverbeke</a> (<a href="http://creativecommons.org/licenses/by/3.0/">license</a>), written March to July 2007, last modified on April 4 2012.</div></div><script type="text/javascript" src="js/mochi.js"> </script><script type="text/javascript" src="js/codemirror.js"> </script><script type="text/javascript" src="js/ejs.js"> </script></body></html>

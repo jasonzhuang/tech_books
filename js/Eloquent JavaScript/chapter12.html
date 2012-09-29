@@ -1,0 +1,347 @@
+<html><head><link rel="stylesheet" type="text/css" href="css/book.css"/><link rel="stylesheet" type="text/css" href="css/highlight.css"/><link rel="stylesheet" type="text/css" href="css/console.css"/><link rel="stylesheet" type="text/css" href="css/codemirror.css"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>The Document-Object Model -- Eloquent JavaScript</title></head><body><script type="text/javascript" src="js/before.js"> </script><div class="content"><script type="text/javascript">var chapterTag = 'dom';</script><div class="navigation"><a href="chapter11.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter13.html">Next chapter &gt;&gt;</a></div><h1><span class="number">Chapter 12: </span>The Document-Object Model</h1><div class="block"><p>In <a href="chapter11.html">chapter 11</a> we saw JavaScript objects referring to <code>form</code> and <code>input</code>
+tags from the HTML document. Such objects are part of a structure
+called the <a name="key1"></a>Document-Object Model (<a name="key2"></a>DOM). Every tag of the document
+is represented in this model, and can be looked up and interacted
+with.</p><p>HTML documents have what is called a hierarchical structure. Each
+element (or tag) except the top <code>&lt;html&gt;</code> tag is contained in another
+element, its parent. This element can in turn contain child elements.
+You can visualise this as a kind of family tree:</p><div class="illustration"><img src="img/html.png"/></div><p>The document-object model is based on such a view of the document.
+Note that the tree contains two types of elements: Nodes, which are
+shown as blue boxes, and pieces of simple text. The pieces of text, as
+we will see, work somewhat different than the other elements. For one
+thing, they never have children.</p><p>Open the file <code>example_alchemy.html</code>, which contains the document
+shown in the picture, and attach the console to it.</p><pre class="code"><span class="variable">attach</span>(<span class="variable">window</span>.<span class="property">open</span>(<span class="string">&quot;example_alchemy.html&quot;</span>));</pre><p><a name="key3"></a>The object for the root of the document
+tree, the <code>html</code> node, can be reached through the <code>documentElement</code>
+property of the <code>document</code> object. Most of the time, we need access to
+the <code>body</code> part of the document instead, which is at
+<a name="key4"></a><code>document.body</code>.</p></div><hr/><div class="block"><p>The links between these nodes are available as properties of the node
+objects. Every DOM object has a <a name="key5"></a><code>parentNode</code> property, which refers
+to the object in which it is contained, if any. These parents also
+have links pointing back to their children, but because there can be
+more than one child, these are stored in a pseudo-array called
+<a name="key6"></a><code>childNodes</code>.</p><pre class="code"><span class="variable">show</span>(<span class="variable">document</span>.<span class="property">body</span>);
+<span class="variable">show</span>(<span class="variable">document</span>.<span class="property">body</span>.<span class="property">parentNode</span>);
+<span class="variable">show</span>(<span class="variable">document</span>.<span class="property">body</span>.<span class="property">childNodes</span>.<span class="property">length</span>);</pre><p>For convenience, there are also links called <a name="key7"></a><code>firstChild</code> and
+<a name="key8"></a><code>lastChild</code>, pointing at the first and last child inside a node, or
+<code>null</code> when there are no children.</p><pre class="code"><span class="variable">show</span>(<span class="variable">document</span>.<span class="property">documentElement</span>.<span class="property">firstChild</span>);
+<span class="variable">show</span>(<span class="variable">document</span>.<span class="property">documentElement</span>.<span class="property">lastChild</span>);</pre><p>Finally, there are properties called <a name="key9"></a><code>nextSibling</code> and
+<a name="key10"></a><code>previousSibling</code>, which point at the nodes sitting 'next' to a node
+― nodes that are children of the same parent, coming before or after
+the current node. Again, when there is no such sibling, the value of
+these properties is <code>null</code>.</p><pre class="code"><span class="variable">show</span>(<span class="variable">document</span>.<span class="property">body</span>.<span class="property">previousSibling</span>);
+<span class="variable">show</span>(<span class="variable">document</span>.<span class="property">body</span>.<span class="property">nextSibling</span>);</pre></div><hr/><div class="block"><p>To find out whether a node represents a simple piece of text or an
+actual HTML node, we can look at its <a name="key11"></a><code>nodeType</code> property. This
+contains a number, <code>1</code> for regular nodes and <code>3</code> for text nodes. There
+are actually other kinds of objects with a <code>nodeType</code>, such as the
+<code>document</code> object, which has <code>9</code>, but the most common use for this
+property is distinguishing between text nodes and other nodes.</p><pre class="code"><span class="keyword">function</span> <span class="variable">isTextNode</span>(<span class="variabledef">node</span>) {
+  <span class="keyword">return</span> <span class="localvariable">node</span>.<span class="property">nodeType</span> == <span class="atom">3</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">isTextNode</span>(<span class="variable">document</span>.<span class="property">body</span>));
+<span class="variable">show</span>(<span class="variable">isTextNode</span>(<span class="variable">document</span>.<span class="property">body</span>.<span class="property">firstChild</span>.<span class="property">firstChild</span>));</pre><p>Regular nodes have a property called <a name="key12"></a><code>nodeName</code>, indicating the type
+of HTML tag that they represent. Text nodes, on the other hand, have a
+<a name="key13"></a><code>nodeValue</code>, containing their text content.</p><pre class="code"><span class="variable">show</span>(<span class="variable">document</span>.<span class="property">body</span>.<span class="property">firstChild</span>.<span class="property">nodeName</span>);
+<span class="variable">show</span>(<span class="variable">document</span>.<span class="property">body</span>.<span class="property">firstChild</span>.<span class="property">firstChild</span>.<span class="property">nodeValue</span>);</pre><p>The <code>nodeName</code>s are always capitalised, which is something you need to
+take into account if you ever want to compare them to something.</p><pre class="code"><span class="keyword">function</span> <span class="variable">isImage</span>(<span class="variabledef">node</span>) {
+  <span class="keyword">return</span> !<span class="variable">isTextNode</span>(<span class="localvariable">node</span>) &amp;&amp; <span class="localvariable">node</span>.<span class="property">nodeName</span> == <span class="string">&quot;IMG&quot;</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">isImage</span>(<span class="variable">document</span>.<span class="property">body</span>.<span class="property">lastChild</span>));</pre></div><hr/><div class="block"><a name="exercise1"></a><div class="exercisenum">Ex. 12.1</div><div class="exercise"><p>Write a function <code>asHTML</code> which, when given a DOM node, produces a
+string representing the HTML text for that node and its children. You
+may ignore attributes, just show nodes as <code>&lt;nodename&gt;</code>. The
+<code>escapeHTML</code> function from <a href="chapter10.html">chapter 10</a> is available to properly escape
+the content of text nodes.</p><p>Hint: Recursion!</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">asHTML</span>(<span class="variabledef">node</span>) {
+  <span class="keyword">if</span> (<span class="variable">isTextNode</span>(<span class="localvariable">node</span>))
+    <span class="keyword">return</span> <span class="variable">escapeHTML</span>(<span class="localvariable">node</span>.<span class="property">nodeValue</span>);
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">node</span>.<span class="property">childNodes</span>.<span class="property">length</span> == <span class="atom">0</span>)
+    <span class="keyword">return</span> <span class="string">&quot;&lt;&quot;</span> + <span class="localvariable">node</span>.<span class="property">nodeName</span> + <span class="string">&quot;/&gt;&quot;</span>;
+  <span class="keyword">else</span>
+    <span class="keyword">return</span> <span class="string">&quot;&lt;&quot;</span> + <span class="localvariable">node</span>.<span class="property">nodeName</span> + <span class="string">&quot;&gt;&quot;</span> +
+           <span class="variable">map</span>(<span class="variable">asHTML</span>, <span class="localvariable">node</span>.<span class="property">childNodes</span>).<span class="property">join</span>(<span class="string">&quot;&quot;</span>) +
+           <span class="string">&quot;&lt;/&quot;</span> + <span class="localvariable">node</span>.<span class="property">nodeName</span> + <span class="string">&quot;&gt;&quot;</span>;
+}
+
+<span class="variable">print</span>(<span class="variable">asHTML</span>(<span class="variable">document</span>.<span class="property">body</span>));</pre></div></div><hr/><div class="block"><p>Nodes, in fact, already have something similar to <code>asHTML</code>. Their
+<a name="key14"></a><code>innerHTML</code> property can be used to retrieve the HTML text <em>inside</em>
+of the node, without the tags for the node itself. Some browsers also
+support <code>outerHTML</code>, which does include the node itself, but not all
+of them.</p><pre class="code"><span class="variable">print</span>(<span class="variable">document</span>.<span class="property">body</span>.<span class="property">innerHTML</span>);</pre><p>Some of these properties can also be modified. Setting the <code>innerHTML</code>
+of a node or the <code>nodeValue</code> of a text-node will change its content.
+Note that, in the first case, the given string is interpreted as HTML,
+while in the second case it is interpreted as plain text.</p><pre class="code"><span class="variable">document</span>.<span class="property">body</span>.<span class="property">firstChild</span>.<span class="property">firstChild</span>.<span class="property">nodeValue</span> =
+  <span class="string">&quot;Chapter 1: The deep significance of the bottle&quot;</span>;</pre><p>Or ...</p><pre class="code"><span class="variable">document</span>.<span class="property">body</span>.<span class="property">firstChild</span>.<span class="property">innerHTML</span> =
+  <span class="string">&quot;Did you know the 'blink' tag yet? &lt;blink&gt;Joy!&lt;/blink&gt;&quot;</span>;</pre></div><hr/><div class="block"><p>We have been accessing nodes by going through a series of <code>firstChild</code>
+and <code>lastChild</code> properties. This can work, but it is verbose and easy
+to break ― if we add another node at the start of our document,
+<code>document.body.firstChild</code> no longer refers to the <code>h1</code> element, and
+code which assumes it does will go wrong. On top of that, some
+browsers will add text-nodes for things like spaces and newlines
+between tags, while others do not, so that the exact layout of the DOM
+tree can vary.</p><p>An alternative to this is to give elements that you need to have
+access to an <code>id</code> attribute. In the example page, the picture has an
+id <code>&quot;picture&quot;</code>, and we can use this to look it up.</p><pre class="code"><span class="keyword">var</span> <span class="variable">picture</span> = <span class="variable">document</span>.<span class="property">getElementById</span>(<span class="string">&quot;picture&quot;</span>);
+<span class="variable">show</span>(<span class="variable">picture</span>.<span class="property">src</span>);
+<span class="variable">picture</span>.<span class="property">src</span> = <span class="string">&quot;img/ostrich.png&quot;</span>;</pre><p><a name="key15"></a>When typing <code>getElementById</code>, note that
+the last letter is lowercase. Also, when typing it a lot, beware of
+carpal-tunnel syndrome. Because <code>document.getElementById</code> is a
+ridiculously long name for a very common operation, it has become a
+convention among JavaScript programmers to aggressively abbreviate it
+to <a name="key16"></a><code>$</code>. <code>$</code>, as you might remember, is considered a letter by
+JavaScript, and is thus a valid variable name.</p><pre class="code"><span class="keyword">function</span> <span class="variable">$</span>(<span class="variabledef">id</span>) {
+  <span class="keyword">return</span> <span class="variable">document</span>.<span class="property">getElementById</span>(<span class="localvariable">id</span>);
+}
+<span class="variable">show</span>(<span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>));</pre><p>DOM nodes also have a method <a name="key17"></a><code>getElementsByTagName</code> (another nice,
+short name), which, when given a tag name, returns an array of all
+nodes of that type contained in the node it was called on.</p><pre class="code"><span class="variable">show</span>(<span class="variable">document</span>.<span class="property">body</span>.<span class="property">getElementsByTagName</span>(<span class="string">&quot;BLINK&quot;</span>)[<span class="atom">0</span>]);</pre></div><hr/><div class="block"><p>Another thing we can do with these DOM nodes is creating new ones
+ourselves. This makes it possible to add pieces to a document at will,
+which can be used to create some interesting effects. Unfortunately,
+the interface for doing this is extremely clumsy. But that can be
+remedied with some helper functions.</p><p><a name="key18"></a><a name="key19"></a>The <code>document</code>
+object has <code>createElement</code> and <code>createTextNode</code> methods. The first is
+used to create regular nodes, the second, as the name suggests,
+creates text nodes.</p><pre class="code"><span class="keyword">var</span> <span class="variable">secondHeader</span> = <span class="variable">document</span>.<span class="property">createElement</span>(<span class="string">&quot;H1&quot;</span>);
+<span class="keyword">var</span> <span class="variable">secondTitle</span> = <span class="variable">document</span>.<span class="property">createTextNode</span>(<span class="string">&quot;Chapter 2: Deep magic&quot;</span>);</pre><p>Next, we'll want to put the title name into the <code>h1</code> element, and then
+add the element to the document. The simplest way to do this is the
+<a name="key20"></a><code>appendChild</code> method, which can be called on every (non-text) node.</p><pre class="code"><span class="variable">secondHeader</span>.<span class="property">appendChild</span>(<span class="variable">secondTitle</span>);
+<span class="variable">document</span>.<span class="property">body</span>.<span class="property">appendChild</span>(<span class="variable">secondHeader</span>);</pre><p>Often, you will also want to give these new nodes some attributes. For
+example, an <code>img</code> (image) tag is rather useless without an <code>src</code>
+property telling the browser which image it should show. Most
+attributes can be approached directly as properties of the DOM nodes,
+but there are also methods <a name="key21"></a><code>setAttribute</code> and <a name="key22"></a><code>getAttribute</code>,
+which are used to access attributes in a more general way:</p><pre class="code"><span class="keyword">var</span> <span class="variable">newImage</span> = <span class="variable">document</span>.<span class="property">createElement</span>(<span class="string">&quot;IMG&quot;</span>);
+<span class="variable">newImage</span>.<span class="property">setAttribute</span>(<span class="string">&quot;src&quot;</span>, <span class="string">&quot;img/Hiva Oa.png&quot;</span>);
+<span class="variable">document</span>.<span class="property">body</span>.<span class="property">appendChild</span>(<span class="variable">newImage</span>);
+<span class="variable">show</span>(<span class="variable">newImage</span>.<span class="property">getAttribute</span>(<span class="string">&quot;src&quot;</span>));</pre></div><hr/><div class="block"><p>But, when we want to build more than a few simple nodes, it gets very
+tiresome to create every single node with a call to
+<code>document.createElement</code> or <code>document.createTextNode</code>, and then add
+its attributes and child nodes one by one. Fortunately, it is not hard
+to write a function to do most of the work for us. Before we do so,
+there is one little detail to take care of ― the <code>setAttribute</code>
+method, while working fine on most browsers, does not always work on
+Internet Explorer. The names of a few HTML attributes already have a
+special meaning in JavaScript, and thus the corresponding object
+properties got an adjusted name. Specifically, the <code>class</code> attribute
+becomes <a name="key23"></a><code>className</code>, <code>for</code> becomes <code>htmlFor</code>, and <code>checked</code> is
+renamed to <code>defaultChecked</code>. On Internet Explorer, <code>setAttribute</code> and
+<code>getAttribute</code> also work with these adjusted names, instead of the
+original HTML names, which can be confusing. On top of that the
+<a name="key24"></a><code>style</code> attribute, which, along with <code>class</code>, will be discussed
+later in this chapter, can not be set with <code>setAttribute</code> on that
+browser.</p><p>A workaround would look something like this:</p><pre class="code"><span class="keyword">function</span> <span class="variable">setNodeAttribute</span>(<span class="variabledef">node</span>, <span class="variabledef">attribute</span>, <span class="variabledef">value</span>) {
+  <span class="keyword">if</span> (<span class="localvariable">attribute</span> == <span class="string">&quot;class&quot;</span>)
+    <span class="localvariable">node</span>.<span class="property">className</span> = <span class="localvariable">value</span>;
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">attribute</span> == <span class="string">&quot;checked&quot;</span>)
+    <span class="localvariable">node</span>.<span class="property">defaultChecked</span> = <span class="localvariable">value</span>;
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">attribute</span> == <span class="string">&quot;for&quot;</span>)
+    <span class="localvariable">node</span>.<span class="property">htmlFor</span> = <span class="localvariable">value</span>;
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">attribute</span> == <span class="string">&quot;style&quot;</span>)
+    <span class="localvariable">node</span>.<span class="property">style</span>.<span class="property">cssText</span> = <span class="localvariable">value</span>;
+  <span class="keyword">else</span>
+    <span class="localvariable">node</span>.<span class="property">setAttribute</span>(<span class="localvariable">attribute</span>, <span class="localvariable">value</span>);
+}</pre><p>For every case where Internet Explorer deviates from other browsers,
+it does something that works in all cases. Don't worry about the
+details ― this is the kind of ugly trick that we'd rather not need,
+but which non-conforming browsers force us to write. Having this, it
+is possible to write a simple function for building DOM elements.</p><pre class="code"><span class="keyword">function</span> <span class="variable">dom</span>(<span class="variabledef">name</span>, <span class="variabledef">attributes</span>) {
+  <span class="keyword">var</span> <span class="variabledef">node</span> = <span class="variable">document</span>.<span class="property">createElement</span>(<span class="localvariable">name</span>);
+  <span class="keyword">if</span> (<span class="localvariable">attributes</span>) {
+    <span class="variable">forEachIn</span>(<span class="localvariable">attributes</span>, <span class="keyword">function</span>(<span class="variabledef">name</span>, <span class="variabledef">value</span>) {
+      <span class="variable">setNodeAttribute</span>(<span class="localvariable">node</span>, <span class="localvariable">name</span>, <span class="localvariable">value</span>);
+    });
+  }
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">2</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">arguments</span>.<span class="property">length</span>; <span class="localvariable">i</span>++) {
+    <span class="keyword">var</span> <span class="variabledef">child</span> = <span class="localvariable">arguments</span>[<span class="localvariable">i</span>];
+    <span class="keyword">if</span> (typeof <span class="localvariable">child</span> == <span class="string">&quot;string&quot;</span>)
+      <span class="localvariable">child</span> = <span class="variable">document</span>.<span class="property">createTextNode</span>(<span class="localvariable">child</span>);
+    <span class="localvariable">node</span>.<span class="property">appendChild</span>(<span class="localvariable">child</span>);
+  }
+  <span class="keyword">return</span> <span class="localvariable">node</span>;
+}
+
+<span class="keyword">var</span> <span class="variable">newParagraph</span> = 
+  <span class="variable">dom</span>(<span class="string">&quot;P&quot;</span>, <span class="atom">null</span>, <span class="string">&quot;A paragraph with a &quot;</span>,
+      <span class="variable">dom</span>(<span class="string">&quot;A&quot;</span>, {<span class="property">href</span>: <span class="string">&quot;http://en.wikipedia.org/wiki/Alchemy&quot;</span>},
+          <span class="string">&quot;link&quot;</span>),
+      <span class="string">&quot; inside of it.&quot;</span>);
+<span class="variable">document</span>.<span class="property">body</span>.<span class="property">appendChild</span>(<span class="variable">newParagraph</span>);</pre><p>The <a name="key25"></a><code>dom</code> function creates a DOM node. Its first argument gives the
+tag name of the node, its second argument is an object containing the
+attributes of the node, or <code>null</code> when no attributes are needed. After
+that, any amount of arguments may follow, and these are added to the
+node as child nodes. When strings appear here, they are first put into
+a text node.</p></div><hr/><div class="block"><p><code>appendChild</code> is not the only way nodes can be inserted into another
+node. When the new node should not appear at the end of its parent,
+the <a name="key26"></a><code>insertBefore</code> method can be used to place it in front of
+another child node. It takes the new node as a first argument, and the
+existing child as second argument.</p><pre class="code"><span class="keyword">var</span> <span class="variable">link</span> = <span class="variable">newParagraph</span>.<span class="property">childNodes</span>[<span class="atom">1</span>];
+<span class="variable">newParagraph</span>.<span class="property">insertBefore</span>(<span class="variable">dom</span>(<span class="string">&quot;STRONG&quot;</span>, <span class="atom">null</span>, <span class="string">&quot;great &quot;</span>), <span class="variable">link</span>);</pre><p>If a node that already has a <code>parentNode</code> is placed somewhere, it is
+automatically removed from its current position ― nodes can not exist
+in the document in more than one place.</p><p>When a node must be replaced by another one, use the <a name="key27"></a><code>replaceChild</code>
+method, which again takes the new node as first argument and the
+existing one as second argument.</p><pre class="code"><span class="variable">newParagraph</span>.<span class="property">replaceChild</span>(<span class="variable">document</span>.<span class="property">createTextNode</span>(<span class="string">&quot;lousy &quot;</span>),
+                          <span class="variable">newParagraph</span>.<span class="property">childNodes</span>[<span class="atom">1</span>]);</pre><p>And, finally, there is <a name="key28"></a><code>removeChild</code> to remove a child node. Note
+that this is called on the <em>parent</em> of the node to be removed, giving
+the child as argument.</p><pre class="code"><span class="variable">newParagraph</span>.<span class="property">removeChild</span>(<span class="variable">newParagraph</span>.<span class="property">childNodes</span>[<span class="atom">1</span>]);</pre></div><hr/><div class="block"><a name="exercise2"></a><div class="exercisenum">Ex. 12.2</div><div class="exercise"><p>Write the convenient function <a name="key29"></a><code>removeElement</code> which removes the DOM
+node it is given as an argument from its parent node.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">removeElement</span>(<span class="variabledef">node</span>) {
+  <span class="keyword">if</span> (<span class="localvariable">node</span>.<span class="property">parentNode</span>)
+    <span class="localvariable">node</span>.<span class="property">parentNode</span>.<span class="property">removeChild</span>(<span class="localvariable">node</span>);
+}
+
+<span class="variable">removeElement</span>(<span class="variable">newParagraph</span>);</pre></div></div><hr/><div class="block"><p>When creating new nodes and moving nodes around it is necessary to be
+aware of the following rule: Nodes are not allowed to be inserted into
+another document from the one in which they were created. This means
+that if you have extra frames or windows open, you can not take a
+piece of the document from one and move it to another, and nodes
+created with methods on one <code>document</code> object must stay in that
+document. Some browsers, notably Firefox, do not enforce this
+restriction, and thus a program which violates it will work fine in
+those browsers but break on others.</p></div><hr/><div class="block"><p>An example of something useful that can be done with this <code>dom</code>
+function is a program that takes JavaScript objects and summarises
+them in a <a name="key30"></a>table. Tables, in HTML, are created with a set of tags
+starting with <code>t</code>s, something like this:</p><pre class="preformatted">&lt;table&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt; &lt;th&gt;Tree &lt;/th&gt; &lt;th&gt;Flowers&lt;/th&gt; &lt;/tr&gt;
+    &lt;tr&gt; &lt;td&gt;Apple&lt;/td&gt; &lt;td&gt;White  &lt;/td&gt; &lt;/tr&gt;
+    &lt;tr&gt; &lt;td&gt;Coral&lt;/td&gt; &lt;td&gt;Red    &lt;/td&gt; &lt;/tr&gt;
+    &lt;tr&gt; &lt;td&gt;Pine &lt;/td&gt; &lt;td&gt;None   &lt;/td&gt; &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;</pre><p>Each <code>tr</code> element is a row of the table. <code>th</code> and <code>td</code> elements are
+the cells of the table, <code>td</code>s are normal data cells, <code>th</code> cells are
+'header' cells, which will be displayed in a slightly more prominent
+way. The <code>tbody</code> (table body) tag does not have to be included when a
+table is written as HTML, but when building a table from DOM nodes it
+should be added, because Internet Explorer refuses to display tables
+created without a <code>tbody</code>.</p></div><hr/><div class="block"><a name="exercise3"></a><div class="exercisenum">Ex. 12.3</div><div class="exercise"><p>The function <code>makeTable</code> takes two arrays as arguments. The first
+contains the JavaScript objects that it should summarise, and the
+second contains strings, which name the columns of the table and the
+properties of the objects that should be shown in these columns. For
+example, the following will produce the table above:</p><pre class="code invalid"><span class="variable">makeTable</span>([{<span class="property">Tree</span>: <span class="string">&quot;Apple&quot;</span>, <span class="property">Flowers</span>: <span class="string">&quot;White&quot;</span>},
+           {<span class="property">Tree</span>: <span class="string">&quot;Coral&quot;</span>, <span class="property">Flowers</span>: <span class="string">&quot;Red&quot;</span>},
+           {<span class="property">Tree</span>: <span class="string">&quot;Pine&quot;</span>,  <span class="property">Flowers</span>: <span class="string">&quot;None&quot;</span>}],
+          [<span class="string">&quot;Tree&quot;</span>, <span class="string">&quot;Flowers&quot;</span>]);</pre><p>Write this function.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">makeTable</span>(<span class="variabledef">data</span>, <span class="variabledef">columns</span>) {
+  <span class="keyword">var</span> <span class="variabledef">headRow</span> = <span class="variable">dom</span>(<span class="string">&quot;TR&quot;</span>);
+  <span class="variable">forEach</span>(<span class="localvariable">columns</span>, <span class="keyword">function</span>(<span class="variabledef">name</span>) {
+    <span class="localvariable">headRow</span>.<span class="property">appendChild</span>(<span class="variable">dom</span>(<span class="string">&quot;TH&quot;</span>, <span class="atom">null</span>, <span class="localvariable">name</span>));
+  });
+
+  <span class="keyword">var</span> <span class="variabledef">body</span> = <span class="variable">dom</span>(<span class="string">&quot;TBODY&quot;</span>, <span class="atom">null</span>, <span class="localvariable">headRow</span>);
+  <span class="variable">forEach</span>(<span class="localvariable">data</span>, <span class="keyword">function</span>(<span class="variabledef">object</span>) {
+    <span class="keyword">var</span> <span class="variabledef">row</span> = <span class="variable">dom</span>(<span class="string">&quot;TR&quot;</span>);
+    <span class="variable">forEach</span>(<span class="localvariable">columns</span>, <span class="keyword">function</span>(<span class="variabledef">name</span>) {
+      <span class="localvariable">row</span>.<span class="property">appendChild</span>(<span class="variable">dom</span>(<span class="string">&quot;TD&quot;</span>, <span class="atom">null</span>, <span class="variable">String</span>(<span class="localvariable">object</span>[<span class="localvariable">name</span>])));
+    });
+    <span class="localvariable">body</span>.<span class="property">appendChild</span>(<span class="localvariable">row</span>);
+  });
+
+  <span class="keyword">return</span> <span class="variable">dom</span>(<span class="string">&quot;TABLE&quot;</span>, <span class="atom">null</span>, <span class="localvariable">body</span>);
+}
+
+<span class="keyword">var</span> <span class="variable">table</span> = <span class="variable">makeTable</span>(<span class="variable">document</span>.<span class="property">body</span>.<span class="property">childNodes</span>,
+                      [<span class="string">&quot;nodeType&quot;</span>, <span class="string">&quot;tagName&quot;</span>]);
+<span class="variable">document</span>.<span class="property">body</span>.<span class="property">appendChild</span>(<span class="variable">table</span>);</pre><p>Do not forget to convert the values from the objects to strings before
+adding them to the table ― our <code>dom</code> function only understands
+strings and DOM nodes.</p></div></div><hr/><div class="block"><p>Closely tied to HTML and the document-object model is the topic of
+<a name="key31"></a>style-sheets. It is a big topic, and I will not discuss it entirely,
+but some understanding of style-sheets is necessary for a lot of
+interesting JavaScript techniques, so we will go over the basics.</p><p>In old-fashioned HTML, the only way to change the appearance of
+elements in a document was to give them extra attributes or to wrap
+them in extra tags, such as <code>center</code> to center them horizontally, or
+<code>font</code> to change the font style or colour. Most of the time, this meant
+that if you wanted the paragraphs or the tables in your document to
+look a certain way, you had to add a bunch of attributes and tags to
+<em>every single one of them</em>. This quickly adds a lot of noise to such
+documents, and makes them very painful to write or change by hand.</p><p>Of course, people being the inventive monkeys they are, someone came
+up with a solution. Style-sheets are a way to make statements like 'in
+this document, all paragraphs use the Comic Sans font, and are purple,
+and all tables have a thick green border'. You specify them once, at
+the top of the document or in a separate file, and they affect the
+whole document. Here, for example, is a style-sheet to make headers 22
+points big and centered, and make paragraphs use the font and colour
+mentioned earlier, when they are of the 'ugly' class.</p><pre class="preformatted">&lt;style type=&quot;text/css&quot;&gt;
+  h1 {
+    font-size: 22pt;
+    text-align: center;
+  }
+
+  p.ugly {
+    font-family: Comic Sans MS;
+    color: purple;
+  }
+&lt;/style&gt;</pre><p>Classes are a concept related to styles. If you have different kinds
+of paragraphs, ugly ones and nice ones for example, setting the style
+for all <code>p</code> elements is not what you want, so <a name="key32"></a>classes can be used to
+distinguish between them. The above style will only be applied to
+paragraphs like this:</p><pre class="preformatted">&lt;p class=&quot;ugly&quot;&gt;Mirror, mirror...&lt;/p&gt;</pre><p>And this is also the meaning of the <a name="key33"></a><code>className</code> property which was
+briefly mentioned for the <code>setNodeAttribute</code> function. The <a name="key34"></a><code>style</code>
+attribute can be used to add a piece of style directly to an element.
+For example, this gives our image a solid border 4 pixels ('px') wide.</p><pre class="code"><span class="variable">setNodeAttribute</span>(<span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>), <span class="string">&quot;style&quot;</span>,
+                 <span class="string">&quot;border-width: 4px; border-style: solid;&quot;</span>);</pre></div><hr/><div class="block"><p>There is much more to styles: Some styles are inherited by child nodes
+from parent nodes, and interfere with each other in complex and
+interesting ways, but for the purpose of DOM programming, the most
+important thing to know is that each DOM node has a <code>style</code> property,
+which can be used to manipulate the style of that node, and that there
+are a few kinds of styles that can be used to make nodes do
+extraordinary things.</p><p>This <code>style</code> property refers to an object, which has properties for
+all the possible elements of the style. We can, for example, make the
+picture's border green.</p><pre class="code"><span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>).<span class="property">style</span>.<span class="property">borderColor</span> = <span class="string">&quot;green&quot;</span>;
+<span class="variable">show</span>(<span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>).<span class="property">style</span>.<span class="property">borderColor</span>);</pre><p>Note that in style-sheets, the words are separated by hyphens, as in
+<code>border-color</code>, while in JavaScript, capital letters are used to mark
+the different words, as in <code>borderColor</code>.</p><p>A very practical kind of style is <code>display: none</code>. This can be used to
+temporarily hide a node: When <a name="key35"></a><code>style.display</code> is <code>&quot;none&quot;</code>, the element
+does not appear at all to the viewer of the document, even though it
+does exist. Later, <code>display</code> can be set to the empty string, and the
+element will re-appear.</p><pre class="code"><span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>).<span class="property">style</span>.<span class="property">display</span> = <span class="string">&quot;none&quot;</span>;</pre><p>And, to get our picture back:</p><pre class="code"><span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>).<span class="property">style</span>.<span class="property">display</span> = <span class="string">&quot;&quot;</span>;</pre></div><hr/><div class="block"><p>Another set of style types that can be abused in interesting ways are
+those related to positioning. In a simple HTML document, the browser
+takes care of determining the screen positions of all the elements ―
+each element is put next to or below the elements that come before it,
+and nodes (generally) do not overlap.</p><p><a name="key36"></a>When its <code>position</code> style is set to <code>&quot;absolute&quot;</code>, a
+node is taken out of the normal document 'flow'. It no longer takes up
+room in the document, but sort of floats above it. The <code>left</code> and
+<code>top</code> styles can then be used to influence its position. This can be
+used for various purposes, from making a node obnoxiously follow the
+mouse cursor to making 'windows' open on top of the rest of the
+document.</p><pre class="code"><span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>).<span class="property">style</span>.<span class="property">position</span> = <span class="string">&quot;absolute&quot;</span>;
+<span class="keyword">var</span> <span class="variable">angle</span> = <span class="atom">0</span>;
+<span class="keyword">var</span> <span class="variable">spin</span> = <span class="variable">setInterval</span>(<span class="keyword">function</span>() {
+  <span class="variable">angle</span> += <span class="atom">0.1</span>;
+  <span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>).<span class="property">style</span>.<span class="property">left</span> = (<span class="atom">100</span> + <span class="atom">100</span> * <span class="variable">Math</span>.<span class="property">cos</span>(<span class="variable">angle</span>)) + <span class="string">&quot;px&quot;</span>;
+  <span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>).<span class="property">style</span>.<span class="property">top</span> = (<span class="atom">100</span> + <span class="atom">100</span> * <span class="variable">Math</span>.<span class="property">sin</span>(<span class="variable">angle</span>)) + <span class="string">&quot;px&quot;</span>;
+}, <span class="atom">100</span>);</pre><p>If you aren't familiar with trigonometry, just believe me when I tell
+you that the cosine and sine stuff is used to build coordinates lying
+on the outline of a circle. Ten times per second, the angle at which
+we place the picture is changed, and new coordinates are computed. It
+is a common error, when setting styles like this, to forget to append
+<code>&quot;px&quot;</code> to your value. In most cases, setting a style to a number
+without a unit does not work, so you must add <code>&quot;px&quot;</code> for pixels, <code>&quot;%&quot;</code>
+for percent, <code>&quot;em&quot;</code> for 'ems' (the width of an <code>M</code> character), or
+<code>&quot;pt&quot;</code> for points.</p><p>(Now put the image to rest again...)</p><pre class="code"><span class="variable">clearInterval</span>(<span class="variable">spin</span>);</pre><p>The place that is treated as 0,0 for the purpose of these positions
+depends on the place of the node in the document. When it is placed
+inside another node that has <code>position: absolute</code> or <code>position:
+relative</code>, the top left of this node is used. Otherwise, you get the
+top left corner of the document.</p></div><hr/><div class="block"><p><a name="key37"></a><a name="key38"></a>One last aspect of DOM nodes that is
+fun to play with is their size. There are style types called <code>width</code>
+and <code>height</code>, which can be used to set the absolute size of an
+element.</p><pre class="code"><span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>).<span class="property">style</span>.<span class="property">width</span> = <span class="string">&quot;400px&quot;</span>;
+<span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>).<span class="property">style</span>.<span class="property">height</span> = <span class="string">&quot;200px&quot;</span>;</pre><p>But, when you need to accurately set the size of an element, there is
+an tricky problem to take into account. Some browsers, in some
+circumstances, take these sizes to mean the outside size of the
+object, including any border and internal padding. Other browsers, in
+other circumstances, use the size of the space inside of the object
+instead, and do not count the width of borders and padding. Thus, if
+you set the size of an object that has a border or a padding, it will
+not always appear the same size.</p><p>Fortunately, you can inspect the inner and outer size of a node,
+which, when you really need to accurately size something, can be used
+to compensate for browser behaviour. The <a name="key39"></a><code>offsetWidth</code> and
+<a name="key40"></a><code>offsetHeight</code> properties give you the outer size of your element
+(the space it takes up in the document), while the <a name="key41"></a><code>clientWidth</code> and
+<a name="key42"></a><code>clientHeight</code> properties give the space inside of it, if any.</p><pre class="code"><span class="variable">print</span>(<span class="string">&quot;Outer size: &quot;</span>, <span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>).<span class="property">offsetWidth</span>,
+      <span class="string">&quot; by &quot;</span>, <span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>).<span class="property">offsetHeight</span>, <span class="string">&quot; pixels.&quot;</span>);
+<span class="variable">print</span>(<span class="string">&quot;Inner size: &quot;</span>, <span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>).<span class="property">clientWidth</span>,
+      <span class="string">&quot; by &quot;</span>, <span class="variable">$</span>(<span class="string">&quot;picture&quot;</span>).<span class="property">clientHeight</span>, <span class="string">&quot; pixels.&quot;</span>);</pre></div><hr/><div class="block"><p>If you've followed through with all the examples in this chapter, and
+maybe did a few extra things by yourself, you will have completely
+mutilated the poor little document that we started with. Now let me
+moralise for a moment and tell you that you do not want to do this to
+real pages. The temptation to add all kinds of moving bling-bling will
+at times be strong. Resist it, or your pages shall surely become
+unreadable or even, if you go far enough, induce the occasional
+seizure.</p></div><div class="navigation"><a href="chapter11.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter13.html">Next chapter &gt;&gt;</a></div><div class="footer">© <a href="mailto:marijnh@gmail.com">Marijn Haverbeke</a> (<a href="http://creativecommons.org/licenses/by/3.0/">license</a>), written March to July 2007, last modified on April 4 2012.</div></div><script type="text/javascript" src="js/mochi.js"> </script><script type="text/javascript" src="js/codemirror.js"> </script><script type="text/javascript" src="js/ejs.js"> </script></body></html>

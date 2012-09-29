@@ -1,0 +1,351 @@
+<html><head><link rel="stylesheet" type="text/css" href="css/book.css"/><link rel="stylesheet" type="text/css" href="css/highlight.css"/><link rel="stylesheet" type="text/css" href="css/console.css"/><link rel="stylesheet" type="text/css" href="css/codemirror.css"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>Web programming: A crash course -- Eloquent JavaScript</title></head><body><script type="text/javascript" src="js/before.js"> </script><div class="content"><script type="text/javascript">var chapterTag = 'web';</script><div class="navigation"><a href="chapter10.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter12.html">Next chapter &gt;&gt;</a></div><h1><span class="number">Chapter 11: </span>Web programming: A crash course</h1><div class="block"><p>You are probably reading this in a web browser, so you are likely to
+be at least a little familiar with the World Wide Web. This
+chapter contains a quick, superficial introduction to the various
+elements that make the web work, and the way they relate to
+JavaScript. The three after this one are more practical, and show some
+of the ways JavaScript can be used to inspect and change a web-page.</p></div><hr/><div class="block"><p>The Internet is, basically, just a computer network spanning most of
+the world. Computer networks make it possible for computers to send
+each other messages. The techniques that underlie networking are an
+interesting subject, but not the subject of this book. All you have to
+know is that, typically, one computer, which we will call the
+<a name="key1"></a>server, is waiting for other computers to start talking to it. Once
+another computer, the <a name="key2"></a>client, opens communications with this server,
+they will exchange whatever it is that needs to be exchanged using
+some specific language, a <a name="key3"></a>protocol.</p><p>The Internet is used to carry messages for <em>many</em> different protocols.
+There are protocols for chatting, protocols for file sharing,
+protocols used by malicious software to control the computer of the
+poor schmuck who installed it, and so on. The protocol that is of
+interest to us is that used by the World Wide Web. It is called
+<a name="key4"></a>HTTP, which stands for Hyper Text Transfer Protocol, and is used to
+retrieve web-pages and the files associated with them.</p><p>In HTTP communication, the server is the computer on which the
+web-page is stored. The client is the computer, such as yours, which
+asks the server for a page, so that it can display it. Asking for a
+page like this is called an '<a name="key5"></a>HTTP request'.</p></div><hr/><div class="block"><p>Web-pages and other files that are accessible through the Internet are
+identified by <a name="key6"></a>URLs, which is an abbreviation of Universal Resource
+Locators. A URL looks like this:</p><pre class="preformatted">http://acc6.its.brooklyn.cuny.edu/~phalsall/texts/taote-v3.html</pre><p>It is composed of three parts. The start, <code>http://</code>, indicates that
+this URL uses the HTTP protocol. There are some other protocols, such
+as FTP (File Transfer Protocol), which also make use of URLs. The next
+part, <code>acc6.its.brooklyn.cuny.edu</code>, names the server on which this
+page can be found. The end of the URL,
+<code>/~phalsal/texts/taote-v3.html</code>, names a specific file on this server.</p><p>Most of the time, the World Wide Web is accessed using a browser.
+After typing a URL or clicking a link, the browser makes the
+appropriate HTTP request to the appropriate server. If all goes well,
+the server responds by sending a file back to the browser, who shows
+it to the user in one way or another.</p><p>When, as in the example, the retrieved file is an <a name="key7"></a>HTML document, it
+will be displayed as a web-page. We briefly discussed HTML in <a href="chapter6.html">chapter 6</a>,
+where we saw that it could refer to image files. In <a href="chapter9.html">chapter 9</a>, we
+found that HTML pages can also contain <code>&lt;script&gt;</code> tags to load files
+of JavaScript code. When showing an HTML document, a browser will
+fetch all these extra files from their servers, so it can add them to
+the document.</p></div><hr/><div class="block"><p>Although a URL is supposed to point at a file, it is possible for a
+web-server to do something more complicated than just looking up a
+file and sending it to the client. ― It can process this file in some
+way first, or maybe there is no file at all, but only a program that,
+given an URL, has some way of generating the relevant document for it.</p><p>Programs that transform or generate documents on a server are a
+popular way to make web-pages less static. When a file is just a file,
+it is always the same, but when there is a program that builds it
+every time it is requested, it could be made to look different for
+each person, based on things like whether this person has logged in or
+specified certain preferences. This can also make managing the content
+of web-pages much easier ― instead of adding a new HTML file whenever
+something new is put on a website, a new document is added to some
+central storage, and the program knows where to find it and how to
+show it to clients.</p><p>This kind of web programming is called <a name="key8"></a>server-side programming. It
+affects the document before it is sent to the user. In some cases, it
+is also practical to have a program that runs <em>after</em> the page has
+been sent, when the user is looking at it. This is called <a name="key9"></a>client-side
+programming, because the program runs on the client computer.
+Client-side web programming is what JavaScript was invented for.</p></div><hr/><div class="block"><p>Running programs client-side has an inherent problem. You can never
+really know in advance what kinds of programs the page you are
+visiting is going to run. If it can send information from your
+computer to others, damage something, or infiltrate your system,
+surfing the web would be a rather hazardous activity.</p><p>To solve this dilemma, browsers severely limit the things a JavaScript
+program may do. It is not allowed to look at your files, or to modify
+anything not related to the web-page it came with. Isolating a
+programming environment like this is called <a name="key10"></a>sand-boxing. Allowing
+the programs enough room to be useful, and at the same time
+restricting them enough to prevent them from doing harm is not an easy
+thing to do. Every few months, some JavaScript programmer comes up
+with a new way to circumvent the limitations and do something harmful
+or privacy-invading. The people responsible for the browsers respond
+by modifying their programs to make this trick impossible, and all is
+well again ― until the next problem is discovered.</p></div><hr/><div class="block"><p>One of the first JavaScript tricks that became widely used is the
+<a name="key11"></a><a name="key12"></a><code>open</code> method of the <code>window</code> object. It takes a URL
+as an argument, and will open a new window showing that URL.</p><pre class="code"><span class="keyword">var</span> <span class="variable">perry</span> = <span class="variable">window</span>.<span class="property">open</span>(<span class="string">&quot;http://www.pbfcomics.com&quot;</span>);</pre><p>Unless you turned off pop-up blocking in <a href="chapter6.html">chapter 6</a>, there's a chance that
+this new window is blocked. There is a good reason pop-up blockers
+exist. Web-programmers, especially those trying to get people to pay
+attention to advertisements, have abused the poor <code>window.open</code> method
+so much that by now, most users hate it with a passion. It has its
+place though, and in this book we will be using it to show some
+example pages. As a general rule, your scripts should not open any new
+windows unless the user asked for them.</p><p>Note that, because <code>open</code> (just like <code>setTimeout</code> and company) is a
+method on the <code>window</code> object, the <code>window.</code> part can be left off.
+When a function is called 'normally', it is called as a method on the
+top-level object, which is what <code>window</code> is. Personally, I think
+<code>open</code> sounds a bit generic, so I'll usually type <code>window.open</code>, which
+makes it clear that it is a window that is being opened.</p><p>The value returned by <code>window.open</code> is a new window. This is the
+global object for the script running in that window, and contains all
+the standard things like the <code>Object</code> constructor and the <code>Math</code>
+object. But if you try to look at them, most browsers will (probably)
+not let you...</p><pre class="code invalid"><span class="variable">show</span>(<span class="variable">perry</span>.<span class="property">Math</span>);</pre><p>This is part of the sand-boxing that I mentioned earlier. Pages opened
+by your browser might show information that is meant only for you, for
+example on sites where you logged in, and thus it would be bad if any
+random script could go and read them. The exception to this rule is
+pages opened on the same domain: When a script running on a page from
+<code>eloquentjavascript.net</code> opens another page on that same domain, it
+can do everything it wants to this page.</p><p>An opened window can be closed with its <a name="key13"></a><a name="key14"></a><code>close</code>
+method. If you didn't already close it yourself...</p><pre class="code"><span class="variable">perry</span>.<span class="property">close</span>();</pre><p>Other kinds of sub-documents, such as frames
+(documents-within-a-document), are also windows from the perspective
+of a JavaScript program, and have their own JavaScript environment. In
+fact, the environment that you have access to in the console belongs
+to a small invisible frame hidden somewhere on this page ― this way,
+it is slightly harder for you to accidentally mess up the whole page.</p></div><hr/><div class="block"><p>Every window object has a <a name="key15"></a><code>document</code> property, which contains an
+object representing the document shown in that window. This object
+contains, for example, a property <a name="key16"></a><code>location</code>,
+with information about the URL of the document.</p><pre class="code"><span class="variable">show</span>(<span class="variable">document</span>.<span class="property">location</span>.<span class="property">href</span>);</pre><p>Setting <code>document.location.href</code> to a new URL can be used to make the
+browser load another document. Another application of the <code>document</code>
+object is its <a name="key17"></a><code>write</code> method. This method, when
+given a string argument, writes some HTML to the document. When it is
+used on a fully loaded document, it will replace the whole document by
+the given HTML, which is usually not what you want. The idea is to
+have a script call it while the document is being loaded, in which
+case the written HTML will be inserted into the document at the place
+of the <code>script</code> tag that triggered it. This is a simple way to add
+some dynamic elements to a page. For example, here is a trivially
+simple document showing the current time.</p><pre class="code"><span class="variable">print</span>(<span class="variable">timeWriter</span>);
+<span class="keyword">var</span> <span class="variable">time</span> = <span class="variable">viewHTML</span>(<span class="variable">timeWriter</span>);</pre><pre class="code"><span class="variable">time</span>.<span class="property">close</span>();</pre><p>Often, the techniques shown in <a href="chapter12.html">chapter 12</a> provide a cleaner and more
+versatile way to modify the document, but occasionally,
+<code>document.write</code> is the nicest, simplest way to do something.</p></div><hr/><div class="block"><p>Another popular application of JavaScript in web pages centers around
+<a name="key18"></a>forms. In case you are not quite sure what the role of 'forms' is,
+let me give a quick summary.</p><p>A basic HTTP request is a simple request for a file. When this file is
+not really a passive file, but a server-side program, it can become
+useful to include information other than a filename in the request.
+For this purpose, HTTP requests are allowed to contain additional
+'parameters'. Here is an example:</p><pre class="preformatted">http://www.google.com/search?q=aztec%20empire</pre><p>After the filename (<code>/search</code>), the URL continues with a question
+mark, after which the parameters follow. This request has one
+parameter, called <code>q</code> (for 'query', presumably), whose value is <code>aztec
+empire</code>. The <code>%20</code> part corresponds to a space. There are a number of
+characters that can not occur in these values, such as spaces,
+ampersands, or question marks. These are 'escaped' by replacing them
+with a <code>%</code> followed by their numerical value<a class="footref" href="#footnote1">1</a>, which serves the same
+purpose as the backslashes used in strings and regular expressions,
+but is even more unreadable.</p><p>JavaScript provides functions <a name="key19"></a><code>encodeURIComponent</code> and
+<a name="key20"></a><code>decodeURIComponent</code> to add these codes to strings and remove them
+again.</p><pre class="code"><span class="keyword">var</span> <span class="variable">encoded</span> = <span class="variable">encodeURIComponent</span>(<span class="string">&quot;aztec empire&quot;</span>);
+<span class="variable">show</span>(<span class="variable">encoded</span>);
+<span class="variable">show</span>(<span class="variable">decodeURIComponent</span>(<span class="variable">encoded</span>));</pre><p>When a request contains more than one parameter, they are separated by
+ampersands, as in...</p><pre class="preformatted">http://www.google.com/search?q=aztec%20empire&amp;lang=nl</pre></div><hr/><div class="block"><p>A form, basically, is a way to make it easy for browser-users to
+create such parameterised URLs. It contains a number of fields, such
+as input boxes for text, checkboxes that can be 'checked' and
+'unchecked', or thingies that allow you to choose from a given set of
+values. It also usually contains a 'submit' button and, invisible to
+the user, an 'action' URL to which it should be sent. When the submit
+button is clicked, or enter is pressed, the information that was
+entered in the fields is added to this action URL as parameters, and
+the browser will request this URL.</p><p>Here is the HTML for a simple form:</p><pre class="preformatted">&lt;form name=&quot;userinfo&quot; method=&quot;get&quot; action=&quot;info.html&quot;&gt;
+  &lt;p&gt;Please give us your information, so that we can send
+  you spam.&lt;/p&gt;
+  &lt;p&gt;Name: &lt;input type=&quot;text&quot; name=&quot;name&quot;/&gt;&lt;/p&gt;
+  &lt;p&gt;E-Mail: &lt;input type=&quot;text&quot; name=&quot;email&quot;/&gt;&lt;/p&gt;
+  &lt;p&gt;Sex: &lt;select name=&quot;sex&quot;&gt;
+            &lt;option&gt;Male&lt;/option&gt;
+            &lt;option&gt;Female&lt;/option&gt;
+            &lt;option&gt;Other&lt;/option&gt;
+          &lt;/select&gt;&lt;/p&gt;
+  &lt;p&gt;&lt;input name=&quot;send&quot; type=&quot;submit&quot; value=&quot;Send!&quot;/&gt;&lt;/p&gt;
+&lt;/form&gt;</pre><p>The name of the form can be used to access it with JavaScript, as we
+shall see in a moment. The names of the fields determine the names of
+the HTTP parameters that are used to store their values. Sending this
+form might produce a URL like this:</p><pre class="preformatted">http://planetspam.com/info.html?name=Ted&amp;email=ted@zork.com&amp;sex=Male</pre><p>There are quite a few other tags and properties that can be used in
+forms, but in this book we will stick with simple ones, so that we can
+concentrate on JavaScript.</p></div><hr/><div class="block"><p>The <code>method=&quot;get&quot;</code> property of the example form shown above indicates
+that this form should encode the values it is given as URL parameters,
+as shown before. There is an alternative method for sending
+parameters, which is called <code>post</code>. An HTTP request using the <code>post</code>
+method contains, in addition to a URL, a block of data. A form using
+the <code>post</code> method puts the values of its parameters in this data block
+instead of in the URL.</p><p>When sending big chunks of data, the <code>get</code> method will result in URLs
+that are a mile wide, so <code>post</code> is usually more convenient. But the
+difference between the two methods is not just a question of
+convenience. Traditionally, <code>get</code> requests are used for requests that
+just ask the server for some document, while <code>post</code> requests are used
+to take an action that changes something on the server. For example,
+getting a list of recent messages on an Internet forum would be a
+<code>get</code> request, while adding a new message would be a <code>post</code> request.
+There is a good reason why most pages follow this distinction ―
+programs that automatically explore the web, such as those used by
+search engines, will generally only make <code>get</code> requests. If changes to
+a site can be made by <code>get</code> requests, these well-meaning 'crawlers'
+could do all kinds of damage.</p></div><hr/><div class="block"><p>When the browser is displaying a page containing a form, JavaScript
+programs can inspect and modify the values that are entered in the
+form's fields. This opens up possibilities for all kinds of tricks,
+such as checking values before they are sent to the server, or
+automatically filling in certain fields.</p><p>The form shown above can be found in the file <code>example_getinfo.html</code>.
+Open it.</p><pre class="code"><span class="keyword">var</span> <span class="variable">form</span> = <span class="variable">window</span>.<span class="property">open</span>(<span class="string">&quot;example_getinfo.html&quot;</span>);</pre><p>When a URL does not contain a server name, it is called a <a name="key21"></a>relative URL.
+Relative URLs are interpreted by the browser to refer to files on the
+same server as the current document. Unless they start with a slash,
+the path (or directory) of the current document is also retained, and
+the given path is appended to it.</p><p>We will be adding a validity check to the form, so that it only
+submits if the name field is not left empty and the e-mail field
+contains something that looks like a valid e-mail address. Because we
+no longer want the form to submit immediately when the 'Send!' button
+is pressed, its <code>type</code> property has been changed from <code>&quot;submit&quot;</code> to
+<code>&quot;button&quot;</code>, which turns it into a regular button with no effect. ―
+<a href="chapter13.html">Chapter 13</a> will show a <em>much</em> better way of doing this, but for now, we
+use the naive method.</p></div><hr/><div class="block"><p><a name="key22"></a>To be able to work with the newly opened window (if you
+closed it, re-open it first), we 'attach' the console to it, like
+this:</p><pre class="code"><span class="variable">attach</span>(<span class="variable">form</span>);</pre><p>After doing this, the code run from the console will be run in the
+given window. To verify that we are indeed working with the correct
+window, we can look at the document's <code>location</code> and <code>title</code>
+properties.</p><pre class="code"><span class="variable">print</span>(<span class="variable">document</span>.<span class="property">location</span>.<span class="property">href</span>);
+<span class="variable">print</span>(<span class="variable">document</span>.<span class="property">title</span>);</pre><p>Because we have entered a new environment, previously defined
+variables, such as <code>form</code>, are no longer present.</p><pre class="code invalid"><span class="variable">show</span>(<span class="variable">form</span>);</pre><p><a name="key23"></a>To get back to our starting environment, we can use the
+<code>detach</code> function (without arguments). But first, we have to add that
+validation system to the form.</p></div><hr/><div class="block"><p>Every HTML tag shown in a document has a JavaScript object associated
+with it. These objects can be used to inspect and manipulate almost
+every aspect of the document. In this chapter, we will work with the
+objects for forms and form fields, <a href="chapter12.html">chapter 12</a> talks about these objects in
+more detail.</p><p><a name="key24"></a>The <code>document</code> object has a property named <code>forms</code>,
+which contains links to all the forms in the document, by name. Our
+form has a property <code>name=&quot;userinfo&quot;</code>, so it can be found under the
+property <code>userinfo</code>.</p><pre class="code"><span class="keyword">var</span> <span class="variable">userForm</span> = <span class="variable">document</span>.<span class="property">forms</span>.<span class="property">userinfo</span>;
+<span class="variable">print</span>(<span class="variable">userForm</span>.<span class="property">method</span>);
+<span class="variable">print</span>(<span class="variable">userForm</span>.<span class="property">action</span>);</pre><p>In this case, the properties <code>method</code> and <code>action</code> that were given to
+the HTML <code>form</code> tag are also present as properties of the JavaScript
+object. This is often the case, but not always: Some HTML properties
+are spelled differently in JavaScript, others are not present at all.
+<a href="chapter12.html">Chapter 12</a> will show a way to get at all properties.</p><p>The object for the <code>form</code> tag has a property <code>elements</code>, which refers
+to an object containing the fields of the form, by name.</p><pre class="code"><span class="keyword">var</span> <span class="variable">nameField</span> = <span class="variable">userForm</span>.<span class="property">elements</span>.<span class="property">name</span>;
+<span class="variable">nameField</span>.<span class="property">value</span> = <span class="string">&quot;Eugène&quot;</span>;</pre><p>Text-input objects have a <code>value</code> property, which can be used to read
+and change their content. If you look at the form window after running
+the above code, you'll see that the name has been filled in.</p></div><hr/><div class="block"><a name="exercise1"></a><div class="exercisenum">Ex. 11.1</div><div class="exercise"><p>Being able to read the values of the form fields makes it possible to
+write a function <code>validInfo</code>, which takes a form object as its
+argument and returns a boolean value: <code>true</code> when the <code>name</code> field is
+not empty and the <code>email</code> field contains something that looks like an
+e-mail address, <code>false</code> otherwise. Write this function.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">validInfo</span>(<span class="variabledef">form</span>) {
+  <span class="keyword">return</span> <span class="localvariable">form</span>.<span class="property">elements</span>.<span class="property">name</span>.<span class="property">value</span> != <span class="string">&quot;&quot;</span> &amp;&amp;
+    <span class="string">/^.+@.+\.\w{2,3}$/</span>.<span class="property">test</span>(<span class="localvariable">form</span>.<span class="property">elements</span>.<span class="property">email</span>.<span class="property">value</span>);
+}
+
+<span class="variable">show</span>(<span class="variable">validInfo</span>(<span class="variable">document</span>.<span class="property">forms</span>.<span class="property">userinfo</span>));</pre><p>You did think to use a regular expression for the e-mail check, didn't
+you?</p></div></div><hr/><div class="block"><p>All we have to do now is determine what happens when people click the
+'Send!' button. At the moment, it does not do anything at all. This
+can be remedied by setting its <code>onclick</code> property.</p><pre class="code"><span class="variable">userForm</span>.<span class="property">elements</span>.<span class="property">send</span>.<span class="property">onclick</span> = <span class="keyword">function</span>() {
+  <span class="variable">alert</span>(<span class="string">&quot;Click.&quot;</span>);
+};</pre><p>Just like the actions given to <code>setInterval</code> and <code>setTimeout</code> (<a href="chapter8.html">chapter 8</a>),
+the value stored in an <a name="key25"></a><code>onclick</code> (or similar) property can be either
+a function or a string of JavaScript code. In this case, we give it a
+function that opens an alert window. Try clicking it.</p></div><hr/><div class="block"><a name="exercise2"></a><div class="exercisenum">Ex. 11.2</div><div class="exercise"><p>Finish the form validator by giving the button's <code>onclick</code> property a
+new value ― a function that checks the form, submits when it is
+valid, or pops up a warning message when it is not. It will be useful
+to know that form objects have a <a name="key26"></a><code>submit</code> method that takes no
+parameters and submits the form.</p></div><div class="solution"><pre class="code"><span class="variable">userForm</span>.<span class="property">elements</span>.<span class="property">send</span>.<span class="property">onclick</span> = <span class="keyword">function</span>() {
+  <span class="keyword">if</span> (<span class="variable">validInfo</span>(<span class="variable">userForm</span>))
+    <span class="variable">userForm</span>.<span class="property">submit</span>();
+  <span class="keyword">else</span>
+    <span class="variable">alert</span>(<span class="string">&quot;Give us a name and a valid e-mail address!&quot;</span>);
+};</pre></div></div><hr/><div class="block"><p>Another trick related to form inputs, as well as other things that can
+be 'selected', such as buttons and links, is the <a name="key27"></a><code>focus</code> method.
+When you know for sure that a user will want to start typing in a
+certain text field as soon as he enters the page, you can have your
+script start by placing the cursor in it, so he won't have to click it
+or select it in some other way.</p><pre class="code"><span class="variable">userForm</span>.<span class="property">elements</span>.<span class="property">name</span>.<span class="property">focus</span>();</pre><p>Because the form sits in another window, it may not be obvious that
+something was selected, depending on the browser you are using. Some
+pages also automatically make the cursor jump to the next field when
+it looks like you finished filling in one field ― for example, when
+you type a zip code. This should not be overdone ― it makes the page
+behave in a way the user does not expect. If he is used to pressing
+tab to move the cursor manually, or mistyped the last character and
+wants to remove it, such magic cursor-jumping is very annoying.</p></div><hr/><div class="block"><pre class="code"><span class="variable">detach</span>();</pre><p>Test the validator. When you enter valid information and click the
+button, the form should submit. If the console was still attached to
+it, this will cause it to detach itself, because the page reloads and
+the JavaScript environment is replaced by a new one.</p><p>If you haven't closed the form window yet, this will close it.</p><pre class="code"><span class="variable">form</span>.<span class="property">close</span>();</pre></div><hr/><div class="block"><p>The above may look easy, but let me assure you, client-side
+web programming is no walk in the park. It can, at times, be a very
+painful ordeal. Why? Because programs that are supposed to run on the
+client computer generally have to work for all popular browsers. Each
+of these browsers tends to work slightly different. To make things
+worse, each of them contains a unique set of problems. Do not assume
+that a program is bug-free just because it was made by a multi-billion
+dollar company. So it is up to us, the web-programmer, to rigorously
+test our programs, figure out what goes wrong, and find ways to work
+around it.</p><p>Some of you might think &quot;I will just report any problems/<a name="key28"></a>bugs I find
+to the browser manufacturers, and they will certainly solve fix them
+immediately&quot;. These people are in for a major disappointment. The most
+recent version of Internet Explorer, the browser that is still used by
+some seventy percent of web-surfers (and that every web-developer
+likes to rag on) still contains bugs that have been known for over
+five years. Serious bugs, too.</p><p>But do not let that discourage you. With the right kind of
+obsessive-compulsive mindset, such problems provide wonderful
+challenges. And for those of us who do not like wasting our time,
+being careful and avoiding the obscure corners of the browser's
+functionality will generally prevent you from running into too much
+trouble.</p></div><hr/><div class="block"><p>Bugs aside, the by-design differences in interface between browsers
+still make for an interesting challenge. The current situation looks
+something like this: On the one hand, there are all the 'small'
+browsers: Firefox, Safari, and Opera are the most important ones, but
+there are more. These browsers all make a reasonable effort to adhere
+to a set of standards that have been developed, or are being
+developed, by the W3C, an organisation that tries to make the Web a
+less confusing place by defining standard interfaces for things like
+this. On the other hand, there is Internet Explorer, Microsoft's
+browser, which rose to dominance in a time when many of these
+standards did not really exist yet, and hasn't made much effort to
+adjust itself to what other people are doing.</p><p>In some areas, such as the way the content of an HTML document can be
+approached from JavaScript (<a href="chapter12.html">chapter 12</a>), the standards are based on the
+method that Internet Explorer invented, and things work more or less
+the same on all browsers. In other areas, such as the way events
+(mouse-clicks, key-presses, and such) are handled (<a href="chapter13.html">chapter 13</a>), Internet
+Explorer works radically different from other browsers.</p><p>For a long time, owing partially to the cluelessness of the average
+JavaScript developer, and partially to the fact that browser
+incompatibilities were much worse when browsers like Internet Explorer
+version 4 or 5 and old versions of Netscape were still common, the
+usual way to deal with such differences was to detect which browser
+the user was running, and litter code with alternate solutions for
+each browser ― if this is Internet Explorer, do this, if this is
+Netscape, do that, and if this is other browser that we didn't think
+of, just hope for the best. You can imagine how hideous, confusing,
+and long such programs were.</p><p>Many sites would also just refuse to load when opened in a browser
+that was 'not supported'. This caused a few of the minor browsers to
+swallow their pride and pretend they were Internet Explorer, just so
+they would be allowed to load such pages. The properties of the
+<a name="key29"></a><code>navigator</code> object contain information about the browser that a page
+was loaded in, but because of such lying this information is not
+particularly reliable. See what yours says<a class="footref" href="#footnote2">2</a>:</p><pre class="code"><span class="variable">forEachIn</span>(<span class="variable">navigator</span>, <span class="keyword">function</span>(<span class="variabledef">name</span>, <span class="variabledef">value</span>) {
+  <span class="variable">print</span>(<span class="localvariable">name</span>, <span class="string">&quot; = &quot;</span>, <span class="localvariable">value</span>);
+});</pre><p>A better approach is to try and 'isolate' our programs from
+differences in browsers. If you need, for example, to find out more
+about an event, such as the clicks we handled by setting the <code>onclick</code>
+property of our send button, you have to look at the top-level object
+called <code>event</code> on Internet Explorer, but you have to use the first
+argument passed to the event-handling function on other browsers. To
+handle this, and a number of other differences related to events, one
+can write a helper function for attaching events to things, which
+takes care of all the plumbing and allows the event-handling functions
+themselves to be the same for all browsers. In <a href="chapter13.html">chapter 13</a> we will write
+such a function.</p><p>(Note: The browser quirks mentioned in the following chapters refer to
+the state of affairs in early 2007, and might no longer be accurate on
+some points.)</p></div><hr/><div class="block"><p>These chapters will only give a somewhat superficial introduction to
+the subject of browser interfaces. They are not the main subject of
+this book, and they are complex enough to fill a thick book on their
+own. When you understand the basics of these interfaces (and
+understand something about HTML), it is not too hard to look for
+specific information online. The interface documentation for the
+<a href="https://developer.mozilla.org/en/Gecko_DOM_Reference">Firefox</a>
+and <a href="http://msdn2.microsoft.com/library/yek4tbz0.aspx">Internet Explorer</a> browsers are a good
+place to start.</p><p>The information in the next chapters will not deal with the quirks of
+'previous-generation' browsers. They deal with Internet Explorer 6,
+Firefox 1.5, Opera 9, Safari 3, or any more recent versions of the
+same browsers. Most of it will also probably be relevant to modern but
+obscure browsers such as Konqueror, but this has not been extensively
+checked. Fortunately, these previous-generation browsers have pretty
+much died out, and are hardly used anymore.</p><p>There is, however, a group of web-users that will still use a browser
+without JavaScript. A large part of this group consists of people
+using a regular graphical browser, but with JavaScript disabled for
+security reasons. Then there are people using textual browsers, or
+browsers for blind people. When working on a 'serious' site, it is
+often a good idea to start with a plain HTML system that works, and
+then add non-essential tricks and conveniences with JavaScript.</p></div><ol class="footnotes"><li><a name="footnote1"></a>The value a character gets is decided by the ASCII standard, which
+assigns the numbers 0 to 127 to a set of letters and symbols used by
+the Latin alphabet. This standard is a precursor of the Unicode
+standard mentioned in <a href="chapter2.html">chapter 2</a>.</li><li><a name="footnote2"></a>Some browsers seem to hide the properties of the <code>navigator</code>
+object, in which case this will print nothing.</li></ol><div class="navigation"><a href="chapter10.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter12.html">Next chapter &gt;&gt;</a></div><div class="footer">© <a href="mailto:marijnh@gmail.com">Marijn Haverbeke</a> (<a href="http://creativecommons.org/licenses/by/3.0/">license</a>), written March to July 2007, last modified on April 4 2012.</div></div><script type="text/javascript" src="js/mochi.js"> </script><script type="text/javascript" src="js/codemirror.js"> </script><script type="text/javascript" src="js/ejs.js"> </script></body></html>

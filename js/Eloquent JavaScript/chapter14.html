@@ -1,0 +1,266 @@
+<html><head><link rel="stylesheet" type="text/css" href="css/book.css"/><link rel="stylesheet" type="text/css" href="css/highlight.css"/><link rel="stylesheet" type="text/css" href="css/console.css"/><link rel="stylesheet" type="text/css" href="css/codemirror.css"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>HTTP requests -- Eloquent JavaScript</title></head><body><script type="text/javascript" src="js/before.js"> </script><div class="content"><script type="text/javascript">var chapterTag = 'xhr';</script><div class="navigation"><a href="chapter13.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="appendix1.html">Next chapter &gt;&gt;</a></div><h1><span class="number">Chapter 14: </span>HTTP requests</h1><div class="block"><p>As mentioned in <a href="chapter11.html">chapter 11</a>, communication on the World Wide Web happens
+over the <a name="key1"></a>HTTP protocol. A simple <a name="key2"></a>request might look
+like this:</p><pre class="preformatted">GET /files/fruit.txt HTTP/1.1
+Host: eloquentjavascript.net
+User-Agent: The Imaginary Browser</pre><p>Which asks for the file <code>files/fruit.txt</code> from the server at
+<code>eloquentjavascript.net</code>. In addition, it specifies that this request
+uses version 1.1 of the HTTP protocol ― version 1.0 is also still in
+use, and works slightly differently. The <code>Host</code> and <code>User-Agent</code> lines
+follow a pattern: They start with a word that identifies the
+information they contain, followed by a colon and the actual
+information. These are called '<a name="key3"></a>headers'. The <code>User-Agent</code> header
+tells the server which browser (or other kind of program) is being
+used to make the request. Other kinds of headers are often sent along,
+for example to state the types of documents that the client can
+understand, or the language that it prefers.</p><p>When given the above request, the server might send the following
+<a name="key4"></a>response:</p><pre class="preformatted">HTTP/1.1 200 OK
+Last-Modified: Mon, 23 Jul 2007 08:41:56 GMT
+Content-Length: 24
+Content-Type: text/plain
+
+apples, oranges, bananas</pre><p>The first line indicates again the version of the HTTP protocol,
+followed by the status of the request. In this case the status code is
+<code>200</code>, meaning 'OK, nothing out of the ordinary happened, I am sending
+you the file'. This is followed by a few headers, indicating (in this
+case) the last time the file was modified, its length, and its type
+(plain text). After the headers you get a blank line, followed by the
+file itself.</p><p>Apart from requests starting with <code>GET</code>, which indicates the client
+just wants to fetch a document, the word <code>POST</code> can also be used to
+indicate some information will be sent along with the request, which
+the server is expected to process in some way.<a class="footref" href="#footnote1">1</a></p></div><hr/><div class="block"><p>When you click a link, submit a form, or in some other way encourage
+your browser to go to a new page, it will do an HTTP request and
+immediately unload the old page to show the newly loaded document. In
+typical situations, this is just what you want ― it is how the web
+traditionally works. Sometimes, however, a JavaScript program wants to
+communicate with the server without re-loading the page. The 'Load'
+button in the console, for example, can load files without leaving the
+page.</p><p>To be able to do things like that, the JavaScript program must make
+the HTTP request itself. Contemporary browsers provide an interface
+for this. As with opening new windows, this interface is subject to
+some restrictions. To prevent a script from doing anything scary, it
+is only allowed to make HTTP requests to the domain that the current
+page came from.</p></div><hr/><div class="block"><p><a name="key5"></a>An object used to make an HTTP request can, on most
+browsers, be created by doing <code>new XMLHttpRequest()</code>. Older versions
+of Internet Explorer, which originally invented these objects, require
+you to do <code>new ActiveXObject(&quot;Msxml2.XMLHTTP&quot;)</code> or, on even older
+versions, <code>new ActiveXObject(&quot;Microsoft.XMLHTTP&quot;)</code>. <a name="key6"></a><code>ActiveXObject</code>
+is Internet Explorer's interface to various kinds of browser add-ons.
+We are already used to writing incompatibility-wrappers by now, so let
+us do so again:</p><pre class="code"><span class="keyword">function</span> <span class="variable">makeHttpObject</span>() {
+  <span class="keyword">try</span> {<span class="keyword">return</span> <span class="keyword">new</span> <span class="variable">XMLHttpRequest</span>();}
+  <span class="keyword">catch</span> (<span class="variabledef">error</span>) {}
+  <span class="keyword">try</span> {<span class="keyword">return</span> <span class="keyword">new</span> <span class="variable">ActiveXObject</span>(<span class="string">&quot;Msxml2.XMLHTTP&quot;</span>);}
+  <span class="keyword">catch</span> (<span class="variabledef">error</span>) {}
+  <span class="keyword">try</span> {<span class="keyword">return</span> <span class="keyword">new</span> <span class="variable">ActiveXObject</span>(<span class="string">&quot;Microsoft.XMLHTTP&quot;</span>);}
+  <span class="keyword">catch</span> (<span class="variabledef">error</span>) {}
+
+  <span class="keyword">throw</span> <span class="keyword">new</span> <span class="variable">Error</span>(<span class="string">&quot;Could not create HTTP request object.&quot;</span>);
+}
+
+<span class="variable">show</span>(typeof(<span class="variable">makeHttpObject</span>()));</pre><p>The wrapper tries to create the object in all three ways, using <code>try</code>
+and <code>catch</code> to detect which ones fail. If none of the ways work, which
+might be the case on older browsers or browsers with strict security
+settings, it raises and error.</p><p>Now why is this object called an <em>XML</em> HTTP request? This is a bit of
+a misleading name. <a name="key7"></a>XML is a way to store textual data. It uses tags
+and attributes like HTML, but is more structured and flexible ― to
+store your own kinds of data, you may define your own types of XML
+tags. These HTTP request objects have some built-in functionality for
+dealing with retrieved XML documents, which is why they have XML in
+their name. They can also handle other types of documents, though, and
+in my experience they are used just as often for non-XML requests.</p></div><hr/><div class="block"><p>Now that we have our HTTP object, we can use it to make a request
+similar the example shown above.</p><pre class="code"><span class="keyword">var</span> <span class="variable">request</span> = <span class="variable">makeHttpObject</span>();
+<span class="variable">request</span>.<span class="property">open</span>(<span class="string">&quot;GET&quot;</span>, <span class="string">&quot;files/fruit.txt&quot;</span>, <span class="atom">false</span>);
+<span class="variable">request</span>.<span class="property">send</span>(<span class="atom">null</span>);
+<span class="variable">print</span>(<span class="variable">request</span>.<span class="property">responseText</span>);</pre><p>The <a name="key8"></a><code>open</code> method is used to configure a request. In this case we
+choose to make a <code>GET</code> request for our <code>fruit.txt</code> file. The <a name="key9"></a>URL
+given here is relative, it does not contain the <code>http://</code> part or a
+server name, which means it will look for the file on the server that
+the current document came from. The third parameter, <code>false</code>, will be
+discussed in a moment. After <code>open</code> has been called, the actual
+request can be made with the <a name="key10"></a><code>send</code> method. When the request is a
+<code>POST</code> request, the data to be sent to the server (as a string) can be
+passed to this method. For <code>GET</code> requests, one should just pass
+<code>null</code>.</p><p>After the request has been made, the <a name="key11"></a><code>responseText</code> property of the
+request object contains the content of the retrieved document. The
+headers that the server sent back can be inspected with the
+<a name="key12"></a><code>getResponseHeader</code> and <a name="key13"></a><code>getAllResponseHeaders</code> functions. The
+first looks up a specific header, the second gives us a string
+containing all the headers. These can occasionally be useful to get
+some extra information about the document.</p><pre class="code"><span class="variable">print</span>(<span class="variable">request</span>.<span class="property">getAllResponseHeaders</span>());
+<span class="variable">show</span>(<span class="variable">request</span>.<span class="property">getResponseHeader</span>(<span class="string">&quot;Date&quot;</span>));</pre><p>If, for some reason, you want to add headers to the request that is
+sent to the server, you can do so with the <a name="key14"></a><code>setRequestHeader</code>
+method. This takes two strings as arguments, the name and the value of
+the header.</p><p>The response code, which was <code>200</code> in the example, can be found under
+the <a name="key15"></a><code>status</code> property. When something went wrong, this cryptic code
+will indicate it. For example, <code>404</code> means the file you asked for did
+not exist. The <a name="key16"></a><code>statusText</code> contains a slightly less cryptic
+description of the status.</p><pre class="code"><span class="variable">show</span>(<span class="variable">request</span>.<span class="property">status</span>);
+<span class="variable">show</span>(<span class="variable">request</span>.<span class="property">statusText</span>);</pre><p>When you want to check whether a request succeeded, comparing the
+<code>status</code> to <code>200</code> is usually enough. In theory, the server might in
+some situations return the code <code>304</code> to indicate that the older
+version of the document, which the browser has stored in its
+'<a name="key17"></a>cache', is still up to date. But it seems that browsers shield you
+from this by setting the <code>status</code> to <code>200</code> even when it is <code>304</code>.
+Also, if you are doing a request over a non-HTTP protocol<a class="footref" href="#footnote2">2</a>, such as
+FTP, the <code>status</code> will not be usable because the protocol does not
+use HTTP status codes.</p></div><hr/><div class="block"><p>When a request is done as in the example above, the call to the <code>send</code>
+method does not return until the request is finished. This is
+convenient, because it means the <code>responseText</code> is available after the
+call to <code>send</code>, and we can start using it immediately. There is a
+problem, though. When the server is slow, or the file is big, doing a
+request might take quite a while. As long as this is happening, the
+program is waiting, which causes the whole browser to wait. Until the
+program finishes, the user can not do anything, not even scroll the
+page. Pages that run on a local network, which is fast and reliable,
+might get away with doing requests like this. Pages on the big great
+unreliable Internet, on the other hand, should not.</p><p>When the third argument to <code>open</code> is <code>true</code>, the request is set to be
+'<a name="key18"></a>asynchronous'. This means that <code>send</code> will return right away, while
+the request happens in the background.</p><pre class="code"><span class="variable">request</span>.<span class="property">open</span>(<span class="string">&quot;GET&quot;</span>, <span class="string">&quot;files/fruit.xml&quot;</span>, <span class="atom">true</span>);
+<span class="variable">request</span>.<span class="property">send</span>(<span class="atom">null</span>);
+<span class="variable">show</span>(<span class="variable">request</span>.<span class="property">responseText</span>);</pre><p>But wait a moment, and...</p><pre class="code"><span class="variable">print</span>(<span class="variable">request</span>.<span class="property">responseText</span>);</pre><p>'Waiting a moment' could be implemented with <code>setTimeout</code> or something
+like that, but there is a better way. A request object has a
+<a name="key19"></a><code>readyState</code> property, indicating the state it is in. This will
+become <code>4</code> when the document has been fully loaded, and have a smaller
+value before that<a class="footref" href="#footnote3">3</a>. To react to changes in this status, you can set
+the <a name="key20"></a><code>onreadystatechange</code> property of the object to a function. This
+function will be called every time the state changes.</p><pre class="code"><span class="variable">request</span>.<span class="property">open</span>(<span class="string">&quot;GET&quot;</span>, <span class="string">&quot;files/fruit.xml&quot;</span>, <span class="atom">true</span>);
+<span class="variable">request</span>.<span class="property">send</span>(<span class="atom">null</span>);
+<span class="variable">request</span>.<span class="property">onreadystatechange</span> = <span class="keyword">function</span>() {
+  <span class="keyword">if</span> (<span class="variable">request</span>.<span class="property">readyState</span> == <span class="atom">4</span>)
+    <span class="variable">show</span>(<span class="variable">request</span>.<span class="property">responseText</span>.<span class="property">length</span>);
+};</pre></div><hr/><div class="block"><p>When the file retrieved by the request object is an XML document, the
+request's <a name="key21"></a><code>responseXML</code> property will hold a representation of this
+document. This representation works like the DOM objects discussed in
+<a href="chapter12.html">chapter 12</a>, except that it doesn't have HTML-specific functionality, such
+as <code>style</code> or <code>innerHTML</code>. <code>responseXML</code> gives us a document object,
+whose <code>documentElement</code> property refers to the outer tag of the XML
+document.</p><pre class="code"><span class="keyword">var</span> <span class="variable">catalog</span> = <span class="variable">request</span>.<span class="property">responseXML</span>.<span class="property">documentElement</span>;
+<span class="variable">show</span>(<span class="variable">catalog</span>.<span class="property">childNodes</span>.<span class="property">length</span>);</pre><p>Such XML documents can be used to exchange structured information with
+the server. Their form ― tags contained inside other tags ― is often
+very suitable to store things that would be tricky to represent as
+simple flat text. The DOM interface is rather clumsy for extracting
+information though, and XML documents are notoriously wordy: The
+<code>fruit.xml</code> document looks like a lot, but all it says is 'apples are
+red, oranges are orange, and bananas are yellow'.</p></div><hr/><div class="block"><p><a name="key22"></a>As an alternative to XML, JavaScript programmers have come up
+with something called <a href="http://www.json.org">JSON</a>. This uses the
+basic notation of JavaScript values to represent 'hierarchical'
+information in a more minimalist way. A JSON document is a file
+containing a single JavaScript object or array, which in turn contains
+any number of other objects, arrays, strings, numbers, booleans, or
+<code>null</code> values. For an example, look at <code>fruit.json</code>:</p><pre class="code"><span class="variable">request</span>.<span class="property">open</span>(<span class="string">&quot;GET&quot;</span>, <span class="string">&quot;files/fruit.json&quot;</span>, <span class="atom">true</span>);
+<span class="variable">request</span>.<span class="property">send</span>(<span class="atom">null</span>);
+<span class="variable">request</span>.<span class="property">onreadystatechange</span> = <span class="keyword">function</span>() {
+  <span class="keyword">if</span> (<span class="variable">request</span>.<span class="property">readyState</span> == <span class="atom">4</span>)
+    <span class="variable">print</span>(<span class="variable">request</span>.<span class="property">responseText</span>);
+};</pre><p>Such a piece of text can be converted to a normal JavaScript value by
+using the <a name="key23"></a><code>eval</code> function. Parentheses should be added around it
+before calling <code>eval</code>, because otherwise JavaScript might interpret an
+object (enclosed by braces) as a block of code, and produce an error.</p><pre class="code"><span class="keyword">function</span> <span class="variable">evalJSON</span>(<span class="variabledef">json</span>) {
+  <span class="keyword">return</span> <span class="variable">eval</span>(<span class="string">&quot;(&quot;</span> + <span class="localvariable">json</span> + <span class="string">&quot;)&quot;</span>);
+}
+<span class="keyword">var</span> <span class="variable">fruit</span> = <span class="variable">evalJSON</span>(<span class="variable">request</span>.<span class="property">responseText</span>);
+<span class="variable">show</span>(<span class="variable">fruit</span>);</pre><p>When running <code>eval</code> on a piece of text, you have to keep in mind that
+this means you let the piece of text run whichever code it wants.
+Since JavaScript only allows us to make requests to our own domain,
+you will usually know exactly what kind of text you are getting, and
+this is not a problem. In other situations, it might be unsafe.</p></div><hr/><div class="block"><a name="exercise1"></a><div class="exercisenum">Ex. 14.1</div><div class="exercise"><p>Write a function called <code>serializeJSON</code> which, when given a JavaScript
+value, produces a string with the value's JSON representation. Simple
+values like numbers and booleans can be simply given to the <code>String</code>
+function to convert them to a string. Objects and arrays can be
+handled by recursion.</p><p>Recognizing arrays can be tricky, since its type is <code>&quot;object&quot;</code>. You
+can use <code>instanceof Array</code>, but that only works for arrays that were
+created in your own window ― others will use the <code>Array</code> prototype
+from other windows, and <code>instanceof</code> will return <code>false</code>. A cheap
+trick is to convert the <code>constructor</code> property to a string, and see
+whether that contains <code>&quot;function Array&quot;</code>.</p><p>When converting a string, you have to take care to escape special
+characters inside it. If you use double-quotes around the string, the
+characters to escape are <code>\&quot;</code>, <code>\\</code>, <code>\f</code>, <code>\b</code>, <code>\n</code>, <code>\t</code>, <code>\r</code>, and
+<code>\v</code><a class="footref" href="#footnote4">4</a>.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">serializeJSON</span>(<span class="variabledef">value</span>) {
+  <span class="keyword">function</span> <span class="variabledef">isArray</span>(<span class="variabledef">value</span>) {
+    <span class="keyword">return</span> <span class="string">/^\s*function Array/</span>.<span class="property">test</span>(<span class="variable">String</span>(<span class="localvariable">value</span>.<span class="property">constructor</span>));
+  }
+
+  <span class="keyword">function</span> <span class="variabledef">serializeArray</span>(<span class="variabledef">value</span>) {
+    <span class="keyword">return</span> <span class="string">&quot;[&quot;</span> + <span class="variable">map</span>(<span class="variable">serializeJSON</span>, <span class="localvariable">value</span>).<span class="property">join</span>(<span class="string">&quot;, &quot;</span>) + <span class="string">&quot;]&quot;</span>;
+  }
+  <span class="keyword">function</span> <span class="variabledef">serializeObject</span>(<span class="variabledef">value</span>) {
+    <span class="keyword">var</span> <span class="variabledef">properties</span> = [];
+    <span class="variable">forEachIn</span>(<span class="localvariable">value</span>, <span class="keyword">function</span>(<span class="variabledef">name</span>, <span class="variabledef">value</span>) {
+      <span class="localvariable">properties</span>.<span class="property">push</span>(<span class="variable">serializeString</span>(<span class="localvariable">name</span>) + <span class="string">&quot;: &quot;</span> +
+                      <span class="variable">serializeJSON</span>(<span class="localvariable">value</span>));
+    });
+    <span class="keyword">return</span> <span class="string">&quot;{&quot;</span> + <span class="localvariable">properties</span>.<span class="property">join</span>(<span class="string">&quot;, &quot;</span>) + <span class="string">&quot;}&quot;</span>;
+  }
+  <span class="keyword">function</span> <span class="variabledef">serializeString</span>(<span class="variabledef">value</span>) {
+    <span class="keyword">var</span> <span class="variabledef">special</span> =
+      {<span class="string">&quot;\&quot;&quot;</span>: <span class="string">&quot;\\\&quot;&quot;</span>, <span class="string">&quot;\\&quot;</span>: <span class="string">&quot;\\\\&quot;</span>, <span class="string">&quot;\f&quot;</span>: <span class="string">&quot;\\f&quot;</span>, <span class="string">&quot;\b&quot;</span>: <span class="string">&quot;\\b&quot;</span>,
+       <span class="string">&quot;\n&quot;</span>: <span class="string">&quot;\\n&quot;</span>, <span class="string">&quot;\t&quot;</span>: <span class="string">&quot;\\t&quot;</span>, <span class="string">&quot;\r&quot;</span>: <span class="string">&quot;\\r&quot;</span>, <span class="string">&quot;\v&quot;</span>: <span class="string">&quot;\\v&quot;</span>};
+    <span class="keyword">var</span> <span class="variabledef">escaped</span> = <span class="localvariable">value</span>.<span class="property">replace</span>(<span class="string">/[\&quot;\\\f\b\n\t\r\v]/g</span>,
+                                <span class="keyword">function</span>(<span class="variabledef">c</span>) {<span class="keyword">return</span> <span class="localvariable">special</span>[<span class="localvariable">c</span>];});
+    <span class="keyword">return</span> <span class="string">&quot;\&quot;&quot;</span> + <span class="localvariable">escaped</span> + <span class="string">&quot;\&quot;&quot;</span>;
+  }
+
+  <span class="keyword">var</span> <span class="variabledef">type</span> = typeof <span class="localvariable">value</span>;
+  <span class="keyword">if</span> (<span class="localvariable">type</span> == <span class="string">&quot;object&quot;</span> &amp;&amp; <span class="localvariable">isArray</span>(<span class="localvariable">value</span>))
+    <span class="keyword">return</span> <span class="localvariable">serializeArray</span>(<span class="localvariable">value</span>);
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">type</span> == <span class="string">&quot;object&quot;</span>)
+    <span class="keyword">return</span> <span class="localvariable">serializeObject</span>(<span class="localvariable">value</span>);
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">type</span> == <span class="string">&quot;string&quot;</span>)
+    <span class="keyword">return</span> <span class="localvariable">serializeString</span>(<span class="localvariable">value</span>);
+  <span class="keyword">else</span>
+    <span class="keyword">return</span> <span class="variable">String</span>(<span class="localvariable">value</span>);
+}
+
+<span class="variable">print</span>(<span class="variable">serializeJSON</span>(<span class="variable">fruit</span>));</pre><p>The trick used in <code>serializeString</code> is similar to what we saw in the
+<code>escapeHTML</code> function in <a href="chapter10.html">chapter 10</a>. It uses an object to look up the
+correct replacements for each of the characters. Some of them, such as
+<code>&quot;\\\\&quot;</code>, look quite weird because of the need to put two backslashes
+for every backslash in the resulting string.</p><p>Also note that the names of properties are quoted as strings. For some
+of them, this is not necessary, but for property names with spaces and
+other strange things in them it is, so the code just takes the easy
+way out and quotes everything.</p></div></div><hr/><div class="block"><p>When making lots of requests, we do, of course, not want to repeat the
+whole <code>open</code>, <code>send</code>, <code>onreadystatechange</code> ritual every time. A very
+simple wrapper could look like this:</p><pre class="code"><span class="keyword">function</span> <span class="variable">simpleHttpRequest</span>(<span class="variabledef">url</span>, <span class="variabledef">success</span>, <span class="variabledef">failure</span>) {
+  <span class="keyword">var</span> <span class="variabledef">request</span> = <span class="variable">makeHttpObject</span>();
+  <span class="localvariable">request</span>.<span class="property">open</span>(<span class="string">&quot;GET&quot;</span>, <span class="localvariable">url</span>, <span class="atom">true</span>);
+  <span class="localvariable">request</span>.<span class="property">send</span>(<span class="atom">null</span>);
+  <span class="localvariable">request</span>.<span class="property">onreadystatechange</span> = <span class="keyword">function</span>() {
+    <span class="keyword">if</span> (<span class="localvariable">request</span>.<span class="property">readyState</span> == <span class="atom">4</span>) {
+      <span class="keyword">if</span> (<span class="localvariable">request</span>.<span class="property">status</span> == <span class="atom">200</span>)
+        <span class="localvariable">success</span>(<span class="localvariable">request</span>.<span class="property">responseText</span>);
+      <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">failure</span>)
+        <span class="localvariable">failure</span>(<span class="localvariable">request</span>.<span class="property">status</span>, <span class="localvariable">request</span>.<span class="property">statusText</span>);
+    }
+  };
+}
+
+<span class="variable">simpleHttpRequest</span>(<span class="string">&quot;files/fruit.txt&quot;</span>, <span class="variable">print</span>);</pre><p>The function retrieves the url it is given, and calls the function it
+is given as a second argument with the content. When a third argument
+is given, this is used to indicate failure ― a non-<code>200</code> status code.</p><p>To be able to do more complex requests, the function could be made to
+accept extra parameters to specify the method (<code>GET</code> or <code>POST</code>), an
+optional string to post as data, a way to add extra headers, and so
+on. When you have so many arguments, you'd probably want to pass them
+as an arguments-object as seen in <a href="chapter9.html">chapter 9</a>.</p></div><hr/><div class="block"><p>Some websites make use of intensive communication between the programs
+running on the client and the programs running on the server. For such
+systems, it can be practical to think of some HTTP requests as calls
+to functions that run on the server. The client makes request to URLs
+that identify the functions, giving the arguments as URL parameters or
+<code>POST</code> data. The server then calls the function, and puts the result
+into JSON or XML document that it sends back. If you write a few
+convenient support functions, this can make calling server-side
+functions almost as easy as calling client-side ones... except, of
+course, that you do not get their results instantly.</p></div><ol class="footnotes"><li><a name="footnote1"></a>These are not the only types of requests. There is also <code>HEAD</code>, to
+request just the headers for a document, not its content, <code>PUT</code>, to
+add a document to a server, and <code>DELETE</code>, to delete a document. These
+are not used by browsers, and often not supported by web-servers, but
+― if you add server-side programs to support them ― they can be
+useful.</li><li><a name="footnote2"></a>Not only the 'XML' part of the <code>XMLHttpRequest</code> name is misleading
+― the object can also be used for request over protocols other than
+HTTP, so <code>Request</code> is the only meaningful part we have left.</li><li><a name="footnote3"></a><code>0</code> ('uninitialized') is the state of the object before <code>open</code> is
+called on it. Calling <code>open</code> moves it to <code>1</code> ('open'). Calling <code>send</code>
+makes it proceed to <code>2</code> ('sent'). When the server responds, it goes to
+<code>3</code> ('receiving'). Finally, <code>4</code> means 'loaded'.</li><li><a name="footnote4"></a>We already saw <code>\n</code>, which is a newline. <code>\t</code> is a tab character,
+<code>\r</code> a 'carriage return', which some systems use before or instead of
+a newline to indicate the end of a line. <code>\b</code> (backspace), <code>\v</code>
+(vertical tab), and <code>\f</code> (form feed) are useful when working with old
+printers, but less so when dealing with Internet browsers.</li></ol><div class="navigation"><a href="chapter13.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="appendix1.html">Next chapter &gt;&gt;</a></div><div class="footer">© <a href="mailto:marijnh@gmail.com">Marijn Haverbeke</a> (<a href="http://creativecommons.org/licenses/by/3.0/">license</a>), written March to July 2007, last modified on April 4 2012.</div></div><script type="text/javascript" src="js/mochi.js"> </script><script type="text/javascript" src="js/codemirror.js"> </script><script type="text/javascript" src="js/ejs.js"> </script></body></html>

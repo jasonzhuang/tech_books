@@ -1,0 +1,697 @@
+<html><head><link rel="stylesheet" type="text/css" href="css/book.css"/><link rel="stylesheet" type="text/css" href="css/highlight.css"/><link rel="stylesheet" type="text/css" href="css/console.css"/><link rel="stylesheet" type="text/css" href="css/codemirror.css"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>Browser Events -- Eloquent JavaScript</title></head><body><script type="text/javascript" src="js/before.js"> </script><div class="content"><script type="text/javascript">var chapterTag = 'event';</script><div class="navigation"><a href="chapter12.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter14.html">Next chapter &gt;&gt;</a></div><h1><span class="number">Chapter 13: </span>Browser Events</h1><div class="block"><p>To add interesting functionality to a web-page, just being able to
+inspect or modify the document is generally not enough. We also need
+to be able to detect what the user is doing, and respond to it. For
+this, we will use a thing called <a name="key1"></a>event handlers. Pressed keys are
+events, mouse clicks are events, even mouse motion can be seen as a
+series of events. In <a href="chapter11.html">chapter 11</a>, we added an <code>onclick</code> property to a
+button, in order to do something when it was pressed. This is a simple
+event handler.</p><p>The way browser events work is, fundamentally, very simple. It is
+possible to register handlers for specific event types and specific
+DOM nodes. Whenever an <a name="key2"></a>event occurs, the handler for that event, if
+any, is called. For some events, such as key presses, knowing just
+that the event occurred is not good enough, you also want to know
+which key was pressed. To store such information, every event creates
+an <a name="key3"></a>event object, which the handler can look at.</p><p>It is important to realise that, even though events can fire at any
+time, no two handlers ever run at the same moment. If other JavaScript
+code is still running, the browser waits until it finishes before it
+calls the next handler. This also holds for code that is triggered in
+other ways, such as with <code>setTimeout</code>. In programmer jargon, browser
+JavaScript is <a name="key4"></a>single-threaded, there are never two '<a name="key5"></a>threads'
+running at the same time. This is, in most cases, a good thing. It is
+very easy to get strange results when multiple things happen at the
+same time.</p><p>An event, when not handled, can 'bubble' through the DOM tree. What
+this means is that if you click on, for example, a link in a
+paragraph, any handlers associated with the link are called first. If
+there are no such handlers, or these handlers do not indicate that
+they have finished handling the event, the handlers for the paragraph,
+which is the parent of the link, are tried. After that, the handlers
+for <code>document.body</code> get a turn. Finally, if no JavaScript handlers
+have taken care of the event, the browser handles it. When clicking a
+link, this means that the link will be followed.</p></div><hr/><div class="block"><p>So, as you see, events are easy. The only hard thing about them is
+that browsers, while all supporting more or less the same
+functionality, support this functionality through different
+interfaces. As usual, the most incompatible browser is Internet
+Explorer, which ignores the standard that most other browsers follow.
+After that, there is Opera, which does not properly support some
+useful events, such as the <code>onunload</code> event which fires when leaving a
+page, and sometimes gives confusing information about keyboard events.</p><p>There are four event-related actions one might want to take.</p><ul><li>Registering an event handler.</li><li>Getting the event object.</li><li>Extracting information from this object.</li><li>Signalling that an event has been handled.</li></ul><p>None of them work the same across all major browsers.</p></div><hr/><div class="block"><p>As a practice field for our event-handling, we open a document with a
+button and a text field. Keep this window open (and attached) for the
+rest of the chapter.</p><pre class="code"><span class="variable">attach</span>(<span class="variable">window</span>.<span class="property">open</span>(<span class="string">&quot;example_events.html&quot;</span>));</pre></div><hr/><div class="block"><p>The first action, registering a handler, can be done by setting an
+element's <code>onclick</code> (or <code>onkeypress</code>, and so on) property. This does
+in fact work across browsers, but it has an important drawback ― you
+can only attach one handler to an element. Most of the time, one is
+enough, but there are cases, especially when a program has to be able
+to work together with other programs (which might also be adding
+handlers), that this is annoying.</p><p><a name="key6"></a>In Internet Explorer, one can add a click handler to a
+button like this:</p><pre class="code invalid"><span class="variable">$</span>(<span class="string">&quot;button&quot;</span>).<span class="property">attachEvent</span>(<span class="string">&quot;onclick&quot;</span>, <span class="keyword">function</span>(){<span class="variable">print</span>(<span class="string">&quot;Click!&quot;</span>);});</pre><p><a name="key7"></a>On the other browsers, it goes like this:</p><pre class="code invalid"><span class="variable">$</span>(<span class="string">&quot;button&quot;</span>).<span class="property">addEventListener</span>(<span class="string">&quot;click&quot;</span>, <span class="keyword">function</span>(){<span class="variable">print</span>(<span class="string">&quot;Click!&quot;</span>);},
+                             <span class="atom">false</span>);</pre><p>Note how <code>&quot;on&quot;</code> is left off in the second case. The third argument
+to <code>addEventListener</code>, <code>false</code>, indicates that the event should
+'bubble' through the DOM tree as normal. Giving <code>true</code> instead can be
+used to give this handler priority over the handlers 'beneath' it, but
+since Internet Explorer does not support such a thing, this is rarely
+useful.</p></div><hr/><div class="block"><a name="exercise1"></a><div class="exercisenum">Ex. 13.1</div><div class="exercise"><p>Write a function called <code>registerEventHandler</code> to wrap the
+incompatibilities of these two models. It takes three arguments: first
+a DOM node that the handler should be attached to, then the name of
+the event type, such as <code>&quot;click&quot;</code> or <code>&quot;keypress&quot;</code>, and finally the
+handler function.</p><p>To determine which method should be called, look for the methods
+themselves ― if the DOM node has a method called <code>attachEvent</code>, you
+may assume that this is the correct method. Note that this is much
+preferable to directly checking whether the browser is Internet
+Explorer. If a new browser arrives which uses Internet Explorer's
+model, or Internet Explorer suddenly switches to the standard model,
+the code will still work. Both are rather unlikely, of course, but
+doing something in a smart way never hurts.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">registerEventHandler</span>(<span class="variabledef">node</span>, <span class="variabledef">event</span>, <span class="variabledef">handler</span>) {
+  <span class="keyword">if</span> (typeof <span class="localvariable">node</span>.<span class="property">addEventListener</span> == <span class="string">&quot;function&quot;</span>)
+    <span class="localvariable">node</span>.<span class="property">addEventListener</span>(<span class="localvariable">event</span>, <span class="localvariable">handler</span>, <span class="atom">false</span>);
+  <span class="keyword">else</span>
+    <span class="localvariable">node</span>.<span class="property">attachEvent</span>(<span class="string">&quot;on&quot;</span> + <span class="localvariable">event</span>, <span class="localvariable">handler</span>);
+}
+
+<span class="variable">registerEventHandler</span>(<span class="variable">$</span>(<span class="string">&quot;button&quot;</span>), <span class="string">&quot;click&quot;</span>,
+                     <span class="keyword">function</span>(){<span class="variable">print</span>(<span class="string">&quot;Click (2)&quot;</span>);});</pre><p>Don't fret about the long, clumsy name. Later on, we will have to add
+an extra wrapper to wrap this wrapper, and it will have a shorter
+name.</p><p>It is also possible to do this check only once, and define
+<code>registerEventHandler</code> to hold a different function depending on the
+browser. This is more efficient, but a little strange.</p><pre class="code"><span class="keyword">if</span> (typeof <span class="variable">document</span>.<span class="property">addEventListener</span> == <span class="string">&quot;function&quot;</span>)
+  <span class="keyword">var</span> <span class="variable">registerEventHandler</span> = <span class="keyword">function</span>(<span class="variabledef">node</span>, <span class="variabledef">event</span>, <span class="variabledef">handler</span>) {
+    <span class="localvariable">node</span>.<span class="property">addEventListener</span>(<span class="localvariable">event</span>, <span class="localvariable">handler</span>, <span class="atom">false</span>);
+  };
+<span class="keyword">else</span>
+  <span class="keyword">var</span> <span class="variable">registerEventHandler</span> = <span class="keyword">function</span>(<span class="variabledef">node</span>, <span class="variabledef">event</span>, <span class="variabledef">handler</span>) {
+    <span class="localvariable">node</span>.<span class="property">attachEvent</span>(<span class="string">&quot;on&quot;</span> + <span class="localvariable">event</span>, <span class="localvariable">handler</span>);
+  };</pre></div></div><hr/><div class="block"><p>Removing events works very much like adding them, but this time the
+methods <a name="key8"></a><code>detachEvent</code> and <a name="key9"></a><code>removeEventListener</code> are used. Note
+that, to remove a handler, you need to have access to the function you
+attached to it.</p><pre class="code"><span class="keyword">function</span> <span class="variable">unregisterEventHandler</span>(<span class="variabledef">node</span>, <span class="variabledef">event</span>, <span class="variabledef">handler</span>) {
+  <span class="keyword">if</span> (typeof <span class="localvariable">node</span>.<span class="property">removeEventListener</span> == <span class="string">&quot;function&quot;</span>)
+    <span class="localvariable">node</span>.<span class="property">removeEventListener</span>(<span class="localvariable">event</span>, <span class="localvariable">handler</span>, <span class="atom">false</span>);
+  <span class="keyword">else</span>
+    <span class="localvariable">node</span>.<span class="property">detachEvent</span>(<span class="string">&quot;on&quot;</span> + <span class="localvariable">event</span>, <span class="localvariable">handler</span>);
+}</pre></div><hr/><div class="block"><p>Exceptions produced by event handlers can, because of technical
+limitations, not be caught by the console. Thus, they are handled by
+the browser, which might mean they get hidden in some kind of 'error
+console' somewhere, or cause a message to pop up. When you write an
+event handler and it does not seem to work, it might be silently
+aborting because it causes some kind of error.</p></div><hr/><div class="block"><p><a name="key10"></a>Most browsers pass the <a name="key11"></a>event object as an argument to the
+handler. Internet Explorer stores it in the top-level variable called
+<code>event</code>. When looking at JavaScript code, you will often come across
+something like <code>event || window.event</code>, which takes the local variable
+<code>event</code> or, if that is undefined, the top-level variable by that same
+name.</p><pre class="code"><span class="keyword">function</span> <span class="variable">showEvent</span>(<span class="variabledef">event</span>) {
+  <span class="variable">show</span>(<span class="localvariable">event</span> || <span class="variable">window</span>.<span class="property">event</span>);
+}
+
+<span class="variable">registerEventHandler</span>(<span class="variable">$</span>(<span class="string">&quot;textfield&quot;</span>), <span class="string">&quot;keypress&quot;</span>, <span class="variable">showEvent</span>);</pre><p>Type a few characters in the field, look at the objects, and shut it
+up again:</p><pre class="code"><span class="variable">unregisterEventHandler</span>(<span class="variable">$</span>(<span class="string">&quot;textfield&quot;</span>), <span class="string">&quot;keypress&quot;</span>, <span class="variable">showEvent</span>);</pre></div><hr/><div class="block"><p><a name="key12"></a><a name="key13"></a><a name="key14"></a><a name="key15"></a>When the user
+clicks his mouse, three events are generated. First <a name="key16"></a><code>mousedown</code>, at
+the moment the mouse button is pressed. Then, <a name="key17"></a><code>mouseup</code>, at the
+moment it is released. And finally, <a name="key18"></a><code>click</code>, to indicate something
+was clicked. When this happens two times in quick succession, a
+<a name="key19"></a><code>dblclick</code> (double-click) event is also generated. Note that it is
+possible for the <code>mousedown</code> and <code>mouseup</code> events to happen some time
+apart ― when the mouse button is held for a while.</p><p>When you attach an event handler to, for example, a button, the fact
+that it has been clicked is often all you need to know. When the
+handler, on the other hand, is attached to a node that has children,
+clicks from the children will 'bubble' up to it, and you will want to
+find out which child has been clicked. For this purpose, event objects
+have a property called <a name="key20"></a><code>target</code>... or <code>srcElement</code>, depending on the
+browser.</p><p><a name="key21"></a><a name="key22"></a>Another interesting piece of information
+are the precise coordinates at which the click occurred. Event objects
+related to the mouse contain <a name="key23"></a><code>clientX</code> and <a name="key24"></a><code>clientY</code> properties,
+which give the <code>x</code> and <code>y</code> coordinates of the mouse, in pixels, on the
+screen. Documents can scroll, though, so often these coordinates do
+not tell us much about the part of the document that the mouse is
+over. Some browsers provide <a name="key25"></a><code>pageX</code> and <a name="key26"></a><code>pageY</code> properties for
+this purpose, but others (guess which) do not. Fortunately, the
+information about the amount of pixels the document has been scrolled
+can be found in <code>document.body.scrollLeft</code> and
+<code>document.body.scrollTop</code>.</p><p>This handler, attached to the whole document, intercepts all mouse
+clicks, and prints some information about them.</p><pre class="code"><span class="keyword">function</span> <span class="variable">reportClick</span>(<span class="variabledef">event</span>) {
+  <span class="localvariable">event</span> = <span class="localvariable">event</span> || <span class="variable">window</span>.<span class="property">event</span>;
+  <span class="keyword">var</span> <span class="variabledef">target</span> = <span class="localvariable">event</span>.<span class="property">target</span> || <span class="localvariable">event</span>.<span class="property">srcElement</span>;
+  <span class="keyword">var</span> <span class="variabledef">pageX</span> = <span class="localvariable">event</span>.<span class="property">pageX</span>, <span class="variabledef">pageY</span> = <span class="localvariable">event</span>.<span class="property">pageY</span>;
+  <span class="keyword">if</span> (<span class="localvariable">pageX</span> == <span class="atom">undefined</span>) {
+    <span class="localvariable">pageX</span> = <span class="localvariable">event</span>.<span class="property">clientX</span> + <span class="variable">document</span>.<span class="property">body</span>.<span class="property">scrollLeft</span>;
+    <span class="localvariable">pageY</span> = <span class="localvariable">event</span>.<span class="property">clientY</span> + <span class="variable">document</span>.<span class="property">body</span>.<span class="property">scrollTop</span>;
+  }
+
+  <span class="variable">print</span>(<span class="string">&quot;Mouse clicked at &quot;</span>, <span class="localvariable">pageX</span>, <span class="string">&quot;, &quot;</span>, <span class="localvariable">pageY</span>,
+        <span class="string">&quot;. Inside element:&quot;</span>);
+  <span class="variable">show</span>(<span class="localvariable">target</span>);
+}
+<span class="variable">registerEventHandler</span>(<span class="variable">document</span>, <span class="string">&quot;click&quot;</span>, <span class="variable">reportClick</span>);</pre><p>And get rid of it again:</p><pre class="code"><span class="variable">unregisterEventHandler</span>(<span class="variable">document</span>, <span class="string">&quot;click&quot;</span>, <span class="variable">reportClick</span>);</pre><p>Obviously, writing all these checks and workarounds is not something
+you want to do in every single event handler. In a moment, after we
+have gotten acquainted with a few more incompatibilities, we will
+write a function to 'normalise' event objects to work the same across
+browsers.</p><p>It is also sometimes possible to find out which mouse button was
+pressed, using the <a name="key27"></a><code>which</code> and <a name="key28"></a><code>button</code> properties of event
+objects. Unfortunately, this is very unreliable ― some browsers
+pretend mouses have only one button, others report right-clicks as
+clicks during which the control key was held down, and so on.</p></div><hr/><div class="block"><p><a name="key29"></a><a name="key30"></a><a name="key31"></a>Apart from clicks, we
+might also be interested in the movement of the mouse. The
+<a name="key32"></a><code>mousemove</code> event of a DOM node is fired whenever the mouse moves
+while it is over that element. There are also <a name="key33"></a><code>mouseover</code> and
+<a name="key34"></a><code>mouseout</code>, which are fired only when the mouse enters or leaves a
+node. For events of this last type, the <code>target</code> (or <code>srcElement</code>)
+property points at the node that the event is fired for, while the
+<a name="key35"></a><code>relatedTarget</code> (or <code>toElement</code>, or <code>fromElement</code>) property gives
+the node that the mouse came from (for <code>mouseover</code>) or left to (for
+<code>mouseout</code>).</p><p><code>mouseover</code> and <code>mouseout</code> can be tricky when they are registered on
+an element that has child nodes. Events fired for the child nodes will
+bubble up to the parent element, so you will also see a <code>mouseover</code>
+event when the mouse enters one of the child nodes. The <code>target</code> and
+<code>relatedTarget</code> properties can be used to detect (and ignore) such
+events.</p></div><hr/><div class="block"><p><a name="key36"></a><a name="key37"></a><a name="key38"></a>For every key that the user
+presses, three events are generated: <a name="key39"></a><code>keydown</code>, <a name="key40"></a><code>keyup</code>, and
+<a name="key41"></a><code>keypress</code>. In general, you should use the first two in cases where
+you really want to know which key was pressed, for example when you
+want to do something when the arrow keys are pressed. <code>keypress</code>, on
+the other hand, is to be used when you are interested in the character
+that is being typed. The reason for this is that there is often no
+character information in <code>keyup</code> and <code>keydown</code> events, and Internet
+Explorer does not generate a <code>keypress</code> event at all for special keys
+such as the arrow keys.</p><p>Finding out which key was pressed can be quite a challenge by itself.
+For <code>keydown</code> and <code>keyup</code> events, the event object will have a
+<a name="key42"></a><code>keyCode</code> property, which contains a number. Most of the time, these
+codes can be used to identify keys in a reasonably browser-independent
+way. Finding out which code corresponds to which key can be done by
+simple experiments...</p><pre class="code"><span class="keyword">function</span> <span class="variable">printKeyCode</span>(<span class="variabledef">event</span>) {
+  <span class="localvariable">event</span> = <span class="localvariable">event</span> || <span class="variable">window</span>.<span class="property">event</span>;
+  <span class="variable">print</span>(<span class="string">&quot;Key &quot;</span>, <span class="localvariable">event</span>.<span class="property">keyCode</span>, <span class="string">&quot; was pressed.&quot;</span>);
+}
+
+<span class="variable">registerEventHandler</span>(<span class="variable">$</span>(<span class="string">&quot;textfield&quot;</span>), <span class="string">&quot;keydown&quot;</span>, <span class="variable">printKeyCode</span>);</pre><pre class="code"><span class="variable">unregisterEventHandler</span>(<span class="variable">$</span>(<span class="string">&quot;textfield&quot;</span>), <span class="string">&quot;keydown&quot;</span>, <span class="variable">printKeyCode</span>);</pre><p>In most browsers, a single key code corresponds to a single <em>physical</em>
+key on your keyboard. The Opera browser, however, will generate
+different key codes for some keys depending on whether shift is
+pressed or not. Even worse, some of these shift-is-pressed codes are
+the same codes that are also used for other keys ― shift-9, which on
+most keyboards is used to type a parenthesis, gets the same code as
+the down arrow, and as such is hard to distinguish from it. When this
+threatens to sabotage your programs, you can usually resolve it by
+ignoring key events that have shift pressed.</p><p>To find out whether the shift, control, or alt key was held during a
+key or mouse event, you can look at the <a name="key43"></a><code>shiftKey</code>, <a name="key44"></a><code>ctrlKey</code>, and
+<a name="key45"></a><code>altKey</code> properties of the event object.</p><p>For <code>keypress</code> events, you will want to know which character was
+typed. The event object will have a <a name="key46"></a><code>charCode</code> property, which, if
+you are lucky, contains the <a name="key47"></a>Unicode number corresponding to the
+character that was typed, which can be converted to a 1-character
+string by using <a name="key48"></a><code>String.fromCharCode</code>. Unfortunately, some browsers
+do not define this property, or define it as <code>0</code>, and store the
+character code in the <a name="key49"></a><code>keyCode</code> property instead.</p><pre class="code"><span class="keyword">function</span> <span class="variable">printCharacter</span>(<span class="variabledef">event</span>) {
+  <span class="localvariable">event</span> = <span class="localvariable">event</span> || <span class="variable">window</span>.<span class="property">event</span>;
+  <span class="keyword">var</span> <span class="variabledef">charCode</span> = <span class="localvariable">event</span>.<span class="property">charCode</span>;
+  <span class="keyword">if</span> (<span class="localvariable">charCode</span> == <span class="atom">undefined</span> || <span class="localvariable">charCode</span> === <span class="atom">0</span>)
+    <span class="localvariable">charCode</span> = <span class="localvariable">event</span>.<span class="property">keyCode</span>;
+  <span class="variable">print</span>(<span class="string">&quot;Character '&quot;</span>, <span class="variable">String</span>.<span class="property">fromCharCode</span>(<span class="localvariable">charCode</span>), <span class="string">&quot;'&quot;</span>);
+}
+
+<span class="variable">registerEventHandler</span>(<span class="variable">$</span>(<span class="string">&quot;textfield&quot;</span>), <span class="string">&quot;keypress&quot;</span>, <span class="variable">printCharacter</span>);</pre><pre class="code"><span class="variable">unregisterEventHandler</span>(<span class="variable">$</span>(<span class="string">&quot;textfield&quot;</span>), <span class="string">&quot;keypress&quot;</span>, <span class="variable">printCharacter</span>);</pre></div><hr/><div class="block"><p>An event handler can 'stop' the event it is handling. There are two
+different ways to do this. You can prevent the event from bubbling up
+to parent nodes and the handlers defined on those, and you can prevent
+the browser from taking the standard action associated with such an
+event. It should be noted that browsers do not always follow this ―
+preventing the default behaviour for the pressing of certain 'hotkeys'
+will, on many browsers, not actually keep the browser from executing
+the normal effect of these keys.</p><p>On most browsers, stopping event bubbling is done with the
+<a name="key50"></a><code>stopPropagation</code> method of the event object, and preventing default
+behaviour is done with the <a name="key51"></a><code>preventDefault</code> method. For Internet
+Explorer, this is done by setting the <a name="key52"></a><code>cancelBubble</code> property of
+this object to <code>true</code>, and the <a name="key53"></a><code>returnValue</code> property to <code>false</code>,
+respectively.</p><p>And that was the last of the long list of incompatibilities that we
+will discuss in this chapter. Which means that we can finally write
+the event normaliser function and move on to more interesting things.</p><pre class="code"><span class="keyword">function</span> <span class="variable">normaliseEvent</span>(<span class="variabledef">event</span>) {
+  <span class="keyword">if</span> (!<span class="localvariable">event</span>.<span class="property">stopPropagation</span>) {
+    <span class="localvariable">event</span>.<span class="property">stopPropagation</span> = <span class="keyword">function</span>() {<span class="localvariable">this</span>.<span class="property">cancelBubble</span> = <span class="atom">true</span>;};
+    <span class="localvariable">event</span>.<span class="property">preventDefault</span> = <span class="keyword">function</span>() {<span class="localvariable">this</span>.<span class="property">returnValue</span> = <span class="atom">false</span>;};
+  }
+  <span class="keyword">if</span> (!<span class="localvariable">event</span>.<span class="property">stop</span>) {
+    <span class="localvariable">event</span>.<span class="property">stop</span> = <span class="keyword">function</span>() {
+      <span class="localvariable">this</span>.<span class="property">stopPropagation</span>();
+      <span class="localvariable">this</span>.<span class="property">preventDefault</span>();
+    };
+  }
+
+  <span class="keyword">if</span> (<span class="localvariable">event</span>.<span class="property">srcElement</span> &amp;&amp; !<span class="localvariable">event</span>.<span class="property">target</span>)
+    <span class="localvariable">event</span>.<span class="property">target</span> = <span class="localvariable">event</span>.<span class="property">srcElement</span>;
+  <span class="keyword">if</span> ((<span class="localvariable">event</span>.<span class="property">toElement</span> || <span class="localvariable">event</span>.<span class="property">fromElement</span>) &amp;&amp; !<span class="localvariable">event</span>.<span class="property">relatedTarget</span>)
+    <span class="localvariable">event</span>.<span class="property">relatedTarget</span> = <span class="localvariable">event</span>.<span class="property">toElement</span> || <span class="localvariable">event</span>.<span class="property">fromElement</span>;
+  <span class="keyword">if</span> (<span class="localvariable">event</span>.<span class="property">clientX</span> != <span class="atom">undefined</span> &amp;&amp; <span class="localvariable">event</span>.<span class="property">pageX</span> == <span class="atom">undefined</span>) {
+    <span class="localvariable">event</span>.<span class="property">pageX</span> = <span class="localvariable">event</span>.<span class="property">clientX</span> + <span class="variable">document</span>.<span class="property">body</span>.<span class="property">scrollLeft</span>;
+    <span class="localvariable">event</span>.<span class="property">pageY</span> = <span class="localvariable">event</span>.<span class="property">clientY</span> + <span class="variable">document</span>.<span class="property">body</span>.<span class="property">scrollTop</span>;
+  }
+  <span class="keyword">if</span> (<span class="localvariable">event</span>.<span class="property">type</span> == <span class="string">&quot;keypress&quot;</span>) {
+    <span class="keyword">if</span> (<span class="localvariable">event</span>.<span class="property">charCode</span> === <span class="atom">0</span> || <span class="localvariable">event</span>.<span class="property">charCode</span> == <span class="atom">undefined</span>)
+      <span class="localvariable">event</span>.<span class="property">character</span> = <span class="variable">String</span>.<span class="property">fromCharCode</span>(<span class="localvariable">event</span>.<span class="property">keyCode</span>);
+    <span class="keyword">else</span>
+      <span class="localvariable">event</span>.<span class="property">character</span> = <span class="variable">String</span>.<span class="property">fromCharCode</span>(<span class="localvariable">event</span>.<span class="property">charCode</span>);
+  }
+
+  <span class="keyword">return</span> <span class="localvariable">event</span>;
+}</pre><p>A <a name="key54"></a><code>stop</code> method is added, which cancels both the bubbling and
+the default action of the event. Some browsers already provide this,
+in which case we leave it as it is.</p><p>Next we can write convenient wrappers for <code>registerEventHandler</code> and
+<code>unregisterEventHandler</code>:</p><pre class="code"><span class="keyword">function</span> <span class="variable">addHandler</span>(<span class="variabledef">node</span>, <span class="variabledef">type</span>, <span class="variabledef">handler</span>) {
+  <span class="keyword">function</span> <span class="variabledef">wrapHandler</span>(<span class="variabledef">event</span>) {
+    <span class="localvariable">handler</span>(<span class="variable">normaliseEvent</span>(<span class="localvariable">event</span> || <span class="variable">window</span>.<span class="property">event</span>));
+  }
+  <span class="variable">registerEventHandler</span>(<span class="localvariable">node</span>, <span class="localvariable">type</span>, <span class="localvariable">wrapHandler</span>);
+  <span class="keyword">return</span> {<span class="property">node</span>: <span class="localvariable">node</span>, <span class="property">type</span>: <span class="localvariable">type</span>, <span class="property">handler</span>: <span class="localvariable">wrapHandler</span>};
+}
+
+<span class="keyword">function</span> <span class="variable">removeHandler</span>(<span class="variabledef">object</span>) {
+  <span class="variable">unregisterEventHandler</span>(<span class="localvariable">object</span>.<span class="property">node</span>, <span class="localvariable">object</span>.<span class="property">type</span>, <span class="localvariable">object</span>.<span class="property">handler</span>);
+}
+
+<span class="keyword">var</span> <span class="variable">blockQ</span> = <span class="variable">addHandler</span>(<span class="variable">$</span>(<span class="string">&quot;textfield&quot;</span>), <span class="string">&quot;keypress&quot;</span>, <span class="keyword">function</span>(<span class="variabledef">event</span>) {
+  <span class="keyword">if</span> (<span class="localvariable">event</span>.<span class="property">character</span>.<span class="property">toLowerCase</span>() == <span class="string">&quot;q&quot;</span>)
+    <span class="localvariable">event</span>.<span class="property">stop</span>();
+});</pre><p>The new <code>addHandler</code> function wraps the handler function it is given
+in a new function, so it can take care of normalising the event
+objects. It returns an object that can be given to <code>removeHandler</code>
+when we want to remove this specific handler. Try typing a '<code>q</code>' in
+the text field.</p><pre class="code"><span class="variable">removeHandler</span>(<span class="variable">blockQ</span>);</pre></div><hr/><div class="block"><p>Armed with <code>addHandler</code> and the <code>dom</code> function from the last chapter,
+we are ready for more challenging feats of document-manipulation. As
+an exercise, we will implement the game known as <a name="key55"></a>Sokoban. This is
+something of a classic, but you may not have seen it before. The rules
+are this: There is a grid, made up of walls, empty space, and one or
+more 'exits'. On this grid, there are a number of crates or stones,
+and a little dude that the player controls. This dude can be moved
+horizontally and vertically into empty squares, and can push the
+boulders around, provided that there is empty space behind them. The
+goal of the game is to move a given number of boulders into the exits.</p><p>Just like the terraria from <a href="chapter8.html">chapter 8</a>, a Sokoban level can be represented
+as text. The variable <code>sokobanLevels</code>, in the <code>example_events.html</code>
+window, contains an array of level objects. Each level has a property
+<code>field</code>, containing a textual representation of the level, and a
+property <code>boulders</code>, indicating the amount of boulders that must be
+expelled to finish the level.</p><pre class="code"><span class="variable">show</span>(<span class="variable">sokobanLevels</span>.<span class="property">length</span>);
+<span class="variable">show</span>(<span class="variable">sokobanLevels</span>[<span class="atom">1</span>].<span class="property">boulders</span>);
+<span class="variable">forEach</span>(<span class="variable">sokobanLevels</span>[<span class="atom">1</span>].<span class="property">field</span>, <span class="variable">print</span>);</pre><p>In such a level, the <code>#</code> characters are walls, spaces are empty
+squares, <code>0</code> characters are used for for boulders, an <code>@</code> for the
+starting location of the player, and a <code>*</code> for the exit.</p></div><hr/><div class="block"><p>But, when playing the game, we do not want to be looking at this
+textual representation. Instead, we will put a <a name="key56"></a>table into the
+document. I made small <a name="key57"></a>style-sheet (<a href="css/sokoban.css">sokoban.css</a>,
+if you are curious what it looks like) to give the cells of this table
+a fixed square size, and added it to the example document. Each of the
+cells in this table will get a background image, representing the type
+of the square (empty, wall, or exit). To show the location of the
+player and the boulders, images are added to these table cells, and
+moved to different cells as appropriate.</p><p>It would be possible to use this table as the main representation of
+our data ― when we want to look whether there is a wall in a given
+square, we just inspect the background of the appropriate table cell,
+and to find the player, we just search for the image node with the
+correct <code>src</code> property. In some cases, this approach is practical, but
+for this program I chose to keep a separate data structure for the
+grid, because it makes things much more straightforward.</p><p>This data structure is a two-dimensional grid of objects, representing
+the squares of the playing field. Each of the objects must store the
+type of background it has and whether there is a boulder or player
+present in that cell. It should also contain a reference to the table
+cell that is used to display it in the document, to make it easy to
+move images in and out of this table cell.</p><p>That gives us two kinds of objects ― one to hold the grid of the
+playing field, and one to represent the individual cells in this grid.
+If we want the game to also do things like moving the next level at
+the appropriate moment, and being able to reset the current level when
+you mess up, we will also need a 'controller' object, which creates or
+removes the field objects at the appropriate moment. For convenience,
+we will be using the prototype approach outlined at the end of <a href="chapter8.html">chapter 8</a>,
+so object types are just prototypes, and the <code>create</code> method, rather
+than the <code>new</code> operator, is used to make new objects.</p></div><hr/><div class="block"><p>Let us start with the objects representing the squares of the game's
+field. They are responsible for setting the background of their cells
+correctly, and adding images as appropriate. The <code>img/sokoban/</code>
+directory contains a set of images, based on another ancient game,
+which will be used to visualise the game. For a start, the <code>Square</code>
+prototype could look like this.</p><pre class="code"><span class="keyword">var</span> <span class="variable">Square</span> = {
+  <span class="property">construct</span>: <span class="keyword">function</span>(<span class="variabledef">character</span>, <span class="variabledef">tableCell</span>) {
+    <span class="localvariable">this</span>.<span class="property">background</span> = <span class="string">&quot;empty&quot;</span>;
+    <span class="keyword">if</span> (<span class="localvariable">character</span> == <span class="string">&quot;#&quot;</span>)
+      <span class="localvariable">this</span>.<span class="property">background</span> = <span class="string">&quot;wall&quot;</span>;
+    <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">character</span> == <span class="string">&quot;*&quot;</span>)
+      <span class="localvariable">this</span>.<span class="property">background</span> = <span class="string">&quot;exit&quot;</span>;
+
+    <span class="localvariable">this</span>.<span class="property">tableCell</span> = <span class="localvariable">tableCell</span>;
+    <span class="localvariable">this</span>.<span class="property">tableCell</span>.<span class="property">className</span> = <span class="localvariable">this</span>.<span class="property">background</span>;
+
+    <span class="localvariable">this</span>.<span class="property">content</span> = <span class="atom">null</span>;
+    <span class="keyword">if</span> (<span class="localvariable">character</span> == <span class="string">&quot;0&quot;</span>)
+      <span class="localvariable">this</span>.<span class="property">content</span> = <span class="string">&quot;boulder&quot;</span>;
+    <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">character</span> == <span class="string">&quot;@&quot;</span>)
+      <span class="localvariable">this</span>.<span class="property">content</span> = <span class="string">&quot;player&quot;</span>;
+
+    <span class="keyword">if</span> (<span class="localvariable">this</span>.<span class="property">content</span> != <span class="atom">null</span>) {
+      <span class="keyword">var</span> <span class="variabledef">image</span> = <span class="variable">dom</span>(<span class="string">&quot;IMG&quot;</span>, {<span class="property">src</span>: <span class="string">&quot;img/sokoban/&quot;</span> +
+                                   <span class="localvariable">this</span>.<span class="property">content</span> + <span class="string">&quot;.gif&quot;</span>});
+      <span class="localvariable">this</span>.<span class="property">tableCell</span>.<span class="property">appendChild</span>(<span class="localvariable">image</span>);
+    }
+  },
+
+  <span class="property">hasPlayer</span>: <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="localvariable">this</span>.<span class="property">content</span> == <span class="string">&quot;player&quot;</span>;
+  },
+  <span class="property">hasBoulder</span>: <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="localvariable">this</span>.<span class="property">content</span> == <span class="string">&quot;boulder&quot;</span>;
+  },
+  <span class="property">isEmpty</span>: <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="localvariable">this</span>.<span class="property">content</span> == <span class="atom">null</span> &amp;&amp; <span class="localvariable">this</span>.<span class="property">background</span> == <span class="string">&quot;empty&quot;</span>;
+  },
+  <span class="property">isExit</span>: <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="localvariable">this</span>.<span class="property">background</span> == <span class="string">&quot;exit&quot;</span>;
+  }
+};
+
+<span class="keyword">var</span> <span class="variable">testSquare</span> = <span class="variable">Square</span>.<span class="property">create</span>(<span class="string">&quot;@&quot;</span>, <span class="variable">dom</span>(<span class="string">&quot;TD&quot;</span>));
+<span class="variable">show</span>(<span class="variable">testSquare</span>.<span class="property">hasPlayer</span>());</pre><p>The <code>character</code> argument to the constructor will be used to transform
+characters from the level blueprints into actual <code>Square</code> objects. To
+set the background of the cells, style-sheet classes are used (defined
+in <a href="css/sokoban.css">sokoban.css</a>), which are assigned to the <code>td</code>
+elements' <code>className</code> property.</p><p>The methods like <code>hasPlayer</code> and <code>isEmpty</code> are a way to 'isolate' the
+code that uses objects of this type from the internals of the objects.
+They are not strictly necessary in this case, but they will make the
+other code look better.</p></div><hr/><div class="block"><a name="exercise2"></a><div class="exercisenum">Ex. 13.2</div><div class="exercise"><p>Add methods <code>moveContent</code> and <code>clearContent</code> to the <code>Square</code>
+prototype. The first one takes another <code>Square</code> object as an argument,
+and moves the content of the <code>this</code> square into the argument by
+updating the <code>content</code> properties and moving the image node associated
+with this content. This will be used to move boulders and players
+around the grid. It may assume the square is not currently empty.
+<code>clearContent</code> removes the content from the square without moving it
+anywhere. Note that the <code>content</code> property for empty squares contains
+<code>null</code>.</p><p>The <code>removeElement</code> function we defined in <a href="chapter12.html">chapter 12</a> is available in this
+chapter too, for your node-removing convenience. You may assume that
+the images are the only child nodes of the table cells, and can thus
+be reached through, for example, <code>this.tableCell.lastChild</code>.</p></div><div class="solution"><pre class="code"><span class="variable">Square</span>.<span class="property">moveContent</span> = <span class="keyword">function</span>(<span class="variabledef">target</span>) {
+  <span class="localvariable">target</span>.<span class="property">content</span> = <span class="localvariable">this</span>.<span class="property">content</span>;
+  <span class="localvariable">this</span>.<span class="property">content</span> = <span class="atom">null</span>;
+  <span class="localvariable">target</span>.<span class="property">tableCell</span>.<span class="property">appendChild</span>(<span class="localvariable">this</span>.<span class="property">tableCell</span>.<span class="property">lastChild</span>);
+};
+<span class="variable">Square</span>.<span class="property">clearContent</span> = <span class="keyword">function</span>() {
+  <span class="localvariable">this</span>.<span class="property">content</span> = <span class="atom">null</span>;
+  <span class="variable">removeElement</span>(<span class="localvariable">this</span>.<span class="property">tableCell</span>.<span class="property">lastChild</span>);
+};</pre></div></div><hr/><div class="block"><p>The next object type will be called <code>SokobanField</code>. Its constructor is
+given an object from the <code>sokobanLevels</code> array, and is responsible for
+building both a table of DOM nodes and a grid of <code>Square</code> objects.
+This object will also take care of the details of moving the player
+and boulders around, through a <code>move</code> method that is given an argument
+indicating which way the player wants to move.</p><p>To identify the individual squares, and to indicate directions, we
+will again use the <code>Point</code> object type from <a href="chapter8.html">chapter 8</a>, which, as you might
+remember, has an <code>add</code> method.</p><p>The base of the field prototype looks like this:</p><pre class="code"><span class="keyword">var</span> <span class="variable">SokobanField</span> = {
+  <span class="property">construct</span>: <span class="keyword">function</span>(<span class="variabledef">level</span>) {
+    <span class="keyword">var</span> <span class="variabledef">tbody</span> = <span class="variable">dom</span>(<span class="string">&quot;TBODY&quot;</span>);
+    <span class="localvariable">this</span>.<span class="property">squares</span> = [];
+    <span class="localvariable">this</span>.<span class="property">bouldersToGo</span> = <span class="localvariable">level</span>.<span class="property">boulders</span>;
+
+    <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">y</span> = <span class="atom">0</span>; <span class="localvariable">y</span> &lt; <span class="localvariable">level</span>.<span class="property">field</span>.<span class="property">length</span>; <span class="localvariable">y</span>++) {
+      <span class="keyword">var</span> <span class="variabledef">line</span> = <span class="localvariable">level</span>.<span class="property">field</span>[<span class="localvariable">y</span>];
+      <span class="keyword">var</span> <span class="variabledef">tableRow</span> = <span class="variable">dom</span>(<span class="string">&quot;TR&quot;</span>);
+      <span class="keyword">var</span> <span class="variabledef">squareRow</span> = [];
+      <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">x</span> = <span class="atom">0</span>; <span class="localvariable">x</span> &lt; <span class="localvariable">line</span>.<span class="property">length</span>; <span class="localvariable">x</span>++) {
+        <span class="keyword">var</span> <span class="variabledef">tableCell</span> = <span class="variable">dom</span>(<span class="string">&quot;TD&quot;</span>);
+        <span class="localvariable">tableRow</span>.<span class="property">appendChild</span>(<span class="localvariable">tableCell</span>);
+        <span class="keyword">var</span> <span class="variabledef">square</span> = <span class="variable">Square</span>.<span class="property">create</span>(<span class="localvariable">line</span>.<span class="property">charAt</span>(<span class="localvariable">x</span>), <span class="localvariable">tableCell</span>);
+        <span class="localvariable">squareRow</span>.<span class="property">push</span>(<span class="localvariable">square</span>);
+        <span class="keyword">if</span> (<span class="localvariable">square</span>.<span class="property">hasPlayer</span>())
+          <span class="localvariable">this</span>.<span class="property">playerPos</span> = <span class="keyword">new</span> <span class="variable">Point</span>(<span class="localvariable">x</span>, <span class="localvariable">y</span>);
+      }
+      <span class="localvariable">tbody</span>.<span class="property">appendChild</span>(<span class="localvariable">tableRow</span>);
+      <span class="localvariable">this</span>.<span class="property">squares</span>.<span class="property">push</span>(<span class="localvariable">squareRow</span>);
+    }
+
+    <span class="localvariable">this</span>.<span class="property">table</span> = <span class="variable">dom</span>(<span class="string">&quot;TABLE&quot;</span>, {<span class="string">&quot;class&quot;</span>: <span class="string">&quot;sokoban&quot;</span>}, <span class="localvariable">tbody</span>);
+    <span class="localvariable">this</span>.<span class="property">score</span> = <span class="variable">dom</span>(<span class="string">&quot;DIV&quot;</span>, <span class="atom">null</span>, <span class="string">&quot;...&quot;</span>);
+    <span class="localvariable">this</span>.<span class="property">updateScore</span>();
+  },
+
+  <span class="property">getSquare</span>: <span class="keyword">function</span>(<span class="variabledef">position</span>) {
+    <span class="keyword">return</span> <span class="localvariable">this</span>.<span class="property">squares</span>[<span class="localvariable">position</span>.<span class="property">y</span>][<span class="localvariable">position</span>.<span class="property">x</span>];
+  },
+  <span class="property">updateScore</span>: <span class="keyword">function</span>() {
+    <span class="localvariable">this</span>.<span class="property">score</span>.<span class="property">firstChild</span>.<span class="property">nodeValue</span> = <span class="localvariable">this</span>.<span class="property">bouldersToGo</span> + 
+                                      <span class="string">&quot; boulders to go.&quot;</span>;
+  },
+  <span class="property">won</span>: <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="localvariable">this</span>.<span class="property">bouldersToGo</span> &lt;= <span class="atom">0</span>;
+  }
+};
+
+<span class="keyword">var</span> <span class="variable">testField</span> = <span class="variable">SokobanField</span>.<span class="property">create</span>(<span class="variable">sokobanLevels</span>[<span class="atom">0</span>]);
+<span class="variable">show</span>(<span class="variable">testField</span>.<span class="property">getSquare</span>(<span class="keyword">new</span> <span class="variable">Point</span>(<span class="atom">10</span>, <span class="atom">2</span>)).<span class="property">content</span>);</pre><p>The constructor goes over the lines and characters in the level, and
+stores the <code>Square</code> objects in the <code>squares</code> property. When it
+encounters the square with the player, it saves this position as
+<code>playerPos</code>, so that we can easily find the square with the player
+later on. <code>getSquare</code> is used to find a <code>Square</code> object corresponding
+to a certain <code>x,y</code> position on the field. Note that it doesn't take
+the edges of the field into account ― to avoid writing some boring
+code, we assume that the field is properly walled off, making it
+impossible to walk out of it.</p><p>The word <code>&quot;class&quot;</code> in the <code>dom</code> call that makes the <code>table</code> node is
+quoted as a string. This is necessary because <a name="key58"></a><code>class</code> is a 'reserved
+word' in JavaScript, and may not be used as a variable or property
+name.</p><p>The amount of boulders that have to be cleared to win the level (this
+may be less than the total amount of boulders on the level) is stored
+in <code>bouldersToGo</code>. Whenever a boulder is brought to the exit, we can
+subtract 1 from this, and see whether the game is won yet. To show the
+player how he is doing, we will have to show this amount somehow. For
+this purpose, a <code>div</code> element with text is used. <code>div</code> nodes are
+containers without inherent markup. The score text can be updated with
+the <code>updateScore</code> method. The <code>won</code> method will be used by the
+controller object to determine when the game is over, so the player
+can move on to the next level.</p></div><hr/><div class="block"><p>If we want to actually see the playing field and the score, we will
+have to insert them into the document somehow. That is what the
+<code>place</code> method is for. We'll also add a <code>remove</code> method to make it
+easy to remove a field when we are done with it.</p><pre class="code"><span class="variable">SokobanField</span>.<span class="property">place</span> = <span class="keyword">function</span>(<span class="variabledef">where</span>) {
+  <span class="localvariable">where</span>.<span class="property">appendChild</span>(<span class="localvariable">this</span>.<span class="property">score</span>);
+  <span class="localvariable">where</span>.<span class="property">appendChild</span>(<span class="localvariable">this</span>.<span class="property">table</span>);
+};
+<span class="variable">SokobanField</span>.<span class="property">remove</span> = <span class="keyword">function</span>() {
+  <span class="variable">removeElement</span>(<span class="localvariable">this</span>.<span class="property">score</span>);
+  <span class="variable">removeElement</span>(<span class="localvariable">this</span>.<span class="property">table</span>);
+};
+
+<span class="variable">testField</span>.<span class="property">place</span>(<span class="variable">document</span>.<span class="property">body</span>);</pre><p>If all went well, you should see a Sokoban field now.</p></div><hr/><div class="block"><a name="exercise3"></a><div class="exercisenum">Ex. 13.3</div><div class="exercise"><p>But this field doesn't do very much yet. Add a method called <code>move</code>.
+It takes a <code>Point</code> object specifying the move as argument (for example
+<code>-1,0</code> to move left), and takes care of moving the game elements in
+the correct way.</p><p>The correct way is this: The <code>playerPos</code> property can be used to
+determine where the player is trying to move. If there is a boulder
+here, look at the square behind this boulder. When there is an exit
+there, remove the boulder and update the score. When there is empty
+space there, move the boulder into it. Next, try to move the player.
+If the square he is trying to move into is not empty, ignore the move.</p></div><div class="solution"><pre class="code"><span class="variable">SokobanField</span>.<span class="property">move</span> = <span class="keyword">function</span>(<span class="variabledef">direction</span>) {
+  <span class="keyword">var</span> <span class="variabledef">playerSquare</span> = <span class="localvariable">this</span>.<span class="property">getSquare</span>(<span class="localvariable">this</span>.<span class="property">playerPos</span>);
+  <span class="keyword">var</span> <span class="variabledef">targetPos</span> = <span class="localvariable">this</span>.<span class="property">playerPos</span>.<span class="property">add</span>(<span class="localvariable">direction</span>);
+  <span class="keyword">var</span> <span class="variabledef">targetSquare</span> = <span class="localvariable">this</span>.<span class="property">getSquare</span>(<span class="localvariable">targetPos</span>);
+
+  <span class="comment">// Possibly pushing a boulder</span>
+  <span class="keyword">if</span> (<span class="localvariable">targetSquare</span>.<span class="property">hasBoulder</span>()) {
+    <span class="keyword">var</span> <span class="variabledef">pushTarget</span> = <span class="localvariable">this</span>.<span class="property">getSquare</span>(<span class="localvariable">targetPos</span>.<span class="property">add</span>(<span class="localvariable">direction</span>));
+    <span class="keyword">if</span> (<span class="localvariable">pushTarget</span>.<span class="property">isEmpty</span>()) {
+      <span class="localvariable">targetSquare</span>.<span class="property">moveContent</span>(<span class="localvariable">pushTarget</span>);
+    }
+    <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">pushTarget</span>.<span class="property">isExit</span>()) {
+      <span class="localvariable">targetSquare</span>.<span class="property">moveContent</span>(<span class="localvariable">pushTarget</span>);
+      <span class="localvariable">pushTarget</span>.<span class="property">clearContent</span>();
+      <span class="localvariable">this</span>.<span class="property">bouldersToGo</span>--;
+      <span class="localvariable">this</span>.<span class="property">updateScore</span>();
+    }
+  }
+  <span class="comment">// Moving the player</span>
+  <span class="keyword">if</span> (<span class="localvariable">targetSquare</span>.<span class="property">isEmpty</span>()) {
+    <span class="localvariable">playerSquare</span>.<span class="property">moveContent</span>(<span class="localvariable">targetSquare</span>);
+    <span class="localvariable">this</span>.<span class="property">playerPos</span> = <span class="localvariable">targetPos</span>;
+  }
+};</pre><p>By taking care of boulders first, the move code can work the same way
+when the player is moving normally and when he is pushing a boulder.
+Note how the square behind the boulder is found by adding the
+<code>direction</code> to the <code>playerPos</code> twice. Test it by moving left two
+squares:</p><pre class="code"><span class="variable">testField</span>.<span class="property">move</span>(<span class="keyword">new</span> <span class="variable">Point</span>(-<span class="atom">1</span>, <span class="atom">0</span>));
+<span class="variable">testField</span>.<span class="property">move</span>(<span class="keyword">new</span> <span class="variable">Point</span>(-<span class="atom">1</span>, <span class="atom">0</span>));</pre><p>If that worked, we moved a boulder into a place from which we can't
+get it out anymore, so we'd better throw this field away.</p><pre class="code"><span class="variable">testField</span>.<span class="property">remove</span>();</pre></div></div><hr/><div class="block"><p>All the 'game logic' has been taken care of now, and we just need a
+controller to make it playable. The controller will be an object type
+called <code>SokobanGame</code>, which is responsible for the following things:</p><ul><li>Preparing a place where the game field can be placed.</li><li>Building and removing <code>SokobanField</code> objects.</li><li>Capturing key events and calling the <code>move</code> method on current field with the correct argument.</li><li>Keeping track of the current level number and moving to the next level when a level is won.</li><li>Adding buttons to reset the current level or the whole game (back to level 0).</li></ul><p>We start again with an unfinished prototype.</p><pre class="code"><span class="keyword">var</span> <span class="variable">SokobanGame</span> = {
+  <span class="property">construct</span>: <span class="keyword">function</span>(<span class="variabledef">place</span>) {
+    <span class="localvariable">this</span>.<span class="property">level</span> = <span class="atom">null</span>;
+    <span class="localvariable">this</span>.<span class="property">field</span> = <span class="atom">null</span>;
+
+    <span class="keyword">var</span> <span class="variabledef">newGame</span> = <span class="variable">dom</span>(<span class="string">&quot;BUTTON&quot;</span>, <span class="atom">null</span>, <span class="string">&quot;New game&quot;</span>);
+    <span class="variable">addHandler</span>(<span class="localvariable">newGame</span>, <span class="string">&quot;click&quot;</span>, <span class="variable">method</span>(<span class="localvariable">this</span>, <span class="string">&quot;newGame&quot;</span>));
+    <span class="keyword">var</span> <span class="variabledef">reset</span> = <span class="variable">dom</span>(<span class="string">&quot;BUTTON&quot;</span>, <span class="atom">null</span>, <span class="string">&quot;Reset level&quot;</span>);
+    <span class="variable">addHandler</span>(<span class="localvariable">reset</span>, <span class="string">&quot;click&quot;</span>, <span class="variable">method</span>(<span class="localvariable">this</span>, <span class="string">&quot;reset&quot;</span>));
+    <span class="localvariable">this</span>.<span class="property">container</span> = <span class="variable">dom</span>(<span class="string">&quot;DIV&quot;</span>, <span class="atom">null</span>,
+                         <span class="variable">dom</span>(<span class="string">&quot;H1&quot;</span>, <span class="atom">null</span>, <span class="string">&quot;Sokoban&quot;</span>),
+                         <span class="variable">dom</span>(<span class="string">&quot;DIV&quot;</span>, <span class="atom">null</span>, <span class="localvariable">newGame</span>, <span class="string">&quot; &quot;</span>, <span class="localvariable">reset</span>));
+    <span class="localvariable">place</span>.<span class="property">appendChild</span>(<span class="localvariable">this</span>.<span class="property">container</span>);
+
+    <span class="variable">addHandler</span>(<span class="variable">document</span>, <span class="string">&quot;keydown&quot;</span>, <span class="variable">method</span>(<span class="localvariable">this</span>, <span class="string">&quot;keyDown&quot;</span>));
+    <span class="localvariable">this</span>.<span class="property">newGame</span>();
+  },
+
+  <span class="property">newGame</span>: <span class="keyword">function</span>() {
+    <span class="localvariable">this</span>.<span class="property">level</span> = <span class="atom">0</span>;
+    <span class="localvariable">this</span>.<span class="property">reset</span>();
+  },
+  <span class="property">reset</span>: <span class="keyword">function</span>() {
+    <span class="keyword">if</span> (<span class="localvariable">this</span>.<span class="property">field</span>)
+      <span class="localvariable">this</span>.<span class="property">field</span>.<span class="property">remove</span>();
+    <span class="localvariable">this</span>.<span class="property">field</span> = <span class="variable">SokobanField</span>.<span class="property">create</span>(<span class="variable">sokobanLevels</span>[<span class="localvariable">this</span>.<span class="property">level</span>]);
+    <span class="localvariable">this</span>.<span class="property">field</span>.<span class="property">place</span>(<span class="localvariable">this</span>.<span class="property">container</span>);
+  },
+
+  <span class="property">keyDown</span>: <span class="keyword">function</span>(<span class="variabledef">event</span>) {
+    <span class="comment">// To be filled in</span>
+  }
+};</pre><p>The constructor builds a <code>div</code> element to hold the field, along with
+two buttons and a title. Note how <code>method</code> is used to attach methods
+on the <code>this</code> object to events.</p><p>We can put a Sokoban game into our document like this:</p><pre class="code"><span class="keyword">var</span> <span class="variable">sokoban</span> = <span class="variable">SokobanGame</span>.<span class="property">create</span>(<span class="variable">document</span>.<span class="property">body</span>);</pre></div><hr/><div class="block"><a name="exercise4"></a><div class="exercisenum">Ex. 13.4</div><div class="exercise"><p>All that is left to do now is filling in the key event handler.
+Replace the <code>keyDown</code> method of the prototype with one that detects
+presses of the arrow keys and, when it finds them, moves the player in
+the correct direction. The following <code>Dictionary</code> will probably come
+in handy:</p><pre class="code"><span class="keyword">var</span> <span class="variable">arrowKeyCodes</span> = <span class="keyword">new</span> <span class="variable">Dictionary</span>({
+  <span class="atom">37</span>: <span class="keyword">new</span> <span class="variable">Point</span>(-<span class="atom">1</span>, <span class="atom">0</span>), <span class="comment">// left</span>
+  <span class="atom">38</span>: <span class="keyword">new</span> <span class="variable">Point</span>(<span class="atom">0</span>, -<span class="atom">1</span>), <span class="comment">// up</span>
+  <span class="atom">39</span>: <span class="keyword">new</span> <span class="variable">Point</span>(<span class="atom">1</span>, <span class="atom">0</span>),  <span class="comment">// right</span>
+  <span class="atom">40</span>: <span class="keyword">new</span> <span class="variable">Point</span>(<span class="atom">0</span>, <span class="atom">1</span>)   <span class="comment">// down</span>
+});</pre><p>After an arrow key has been handled, check <code>this.field.won()</code> to find
+out if that was the winning move. If the player won, use <code>alert</code> to
+show a message, and go to the next level. If there is no next level
+(check <code>sokobanLevels.length</code>), restart the game instead.</p><p>It is probably wise to stop the events for key presses after handling
+them, otherwise pressing arrow-up and arrow-down will scroll your
+window, which is rather annoying.</p></div><div class="solution"><pre class="code"><span class="variable">SokobanGame</span>.<span class="property">keyDown</span> = <span class="keyword">function</span>(<span class="variabledef">event</span>) {
+  <span class="keyword">if</span> (<span class="variable">arrowKeyCodes</span>.<span class="property">contains</span>(<span class="localvariable">event</span>.<span class="property">keyCode</span>)) {
+    <span class="localvariable">event</span>.<span class="property">stop</span>();
+    <span class="localvariable">this</span>.<span class="property">field</span>.<span class="property">move</span>(<span class="variable">arrowKeyCodes</span>.<span class="property">lookup</span>(<span class="localvariable">event</span>.<span class="property">keyCode</span>));
+    <span class="keyword">if</span> (<span class="localvariable">this</span>.<span class="property">field</span>.<span class="property">won</span>()) {
+      <span class="keyword">if</span> (<span class="localvariable">this</span>.<span class="property">level</span> &lt; <span class="variable">sokobanLevels</span>.<span class="property">length</span> - <span class="atom">1</span>) {
+        <span class="variable">alert</span>(<span class="string">&quot;Excellent! Going to the next level.&quot;</span>);
+        <span class="localvariable">this</span>.<span class="property">level</span>++;
+        <span class="localvariable">this</span>.<span class="property">reset</span>();
+      }
+      <span class="keyword">else</span> {
+        <span class="variable">alert</span>(<span class="string">&quot;You win! Game over.&quot;</span>);
+        <span class="localvariable">this</span>.<span class="property">newGame</span>();
+      }
+    }
+  }
+};</pre><p>It has to be noted that capturing keys like this ― adding a handler
+to the <code>document</code> and stopping the events that you are looking for ―
+is not very nice when there are other elements in the document. For
+example, try moving the cursor around in the text field at the top of
+the document. ― It won't work, you'll only move the little man in the
+Sokoban game. If a game like this were to be used in a real site, it
+is probably best to put it in a frame or window of its own, so that it
+only grabs events aimed at its own window.</p></div></div><hr/><div class="block"><a name="exercise5"></a><div class="exercisenum">Ex. 13.5</div><div class="exercise"><p>When brought to the exit, the boulders vanish rather abrubtly. By
+modifying the <code>Square.clearContent</code> method, try to show a 'falling'
+animation for boulders that are about to be removed. Make them grow
+smaller for a moment before, and then disappear. You can use
+<code>style.width = &quot;50%&quot;</code>, and similarly for <code>style.height</code>, to make an
+image appear, for example, half as big as it usually is.</p></div><div class="solution"><p>We can use <code>setInterval</code> to handle the timing of the animation. Note
+that the method makes sure to clear the interval after it is done. If
+you don't do that, it will continue wasting your computer's time until
+the page is closed.</p><pre class="code"><span class="variable">Square</span>.<span class="property">clearContent</span> = <span class="keyword">function</span>() {
+  <span class="variable">self</span>.<span class="property">content</span> = <span class="atom">null</span>;
+  <span class="keyword">var</span> <span class="variabledef">image</span> = <span class="localvariable">this</span>.<span class="property">tableCell</span>.<span class="property">lastChild</span>;
+  <span class="keyword">var</span> <span class="variabledef">size</span> = <span class="atom">100</span>;
+
+  <span class="keyword">var</span> <span class="variabledef">animate</span> = <span class="variable">setInterval</span>(<span class="keyword">function</span>() {
+    <span class="localvariable">size</span> -= <span class="atom">10</span>;
+    <span class="localvariable">image</span>.<span class="property">style</span>.<span class="property">width</span> = <span class="localvariable">size</span> + <span class="string">&quot;%&quot;</span>;
+    <span class="localvariable">image</span>.<span class="property">style</span>.<span class="property">height</span> = <span class="localvariable">size</span> + <span class="string">&quot;%&quot;</span>;
+
+    <span class="keyword">if</span> (<span class="localvariable">size</span> &lt; <span class="atom">60</span>) {
+      <span class="variable">clearInterval</span>(<span class="localvariable">animate</span>);
+      <span class="variable">removeElement</span>(<span class="localvariable">image</span>);
+    }
+  }, <span class="atom">70</span>);
+};</pre><p>Now, if you have a few hours to waste, try finishing all levels.</p></div></div><hr/><div class="block"><p><a name="key59"></a><a name="key60"></a>Other event types that can be useful are
+<a name="key61"></a><code>focus</code> and <a name="key62"></a><code>blur</code>, which are fired on elements that can be
+'focused', such as form inputs. <code>focus</code>, obviously, happens when you
+put the focus on the element, for example by clicking on it. <code>blur</code> is
+JavaScript-speak for 'unfocus', and is fired when the focus leaves the
+element.</p><pre class="code"><span class="variable">addHandler</span>(<span class="variable">$</span>(<span class="string">&quot;textfield&quot;</span>), <span class="string">&quot;focus&quot;</span>, <span class="keyword">function</span>(<span class="variabledef">event</span>) {
+  <span class="localvariable">event</span>.<span class="property">target</span>.<span class="property">style</span>.<span class="property">backgroundColor</span> = <span class="string">&quot;yellow&quot;</span>;
+});
+<span class="variable">addHandler</span>(<span class="variable">$</span>(<span class="string">&quot;textfield&quot;</span>), <span class="string">&quot;blur&quot;</span>, <span class="keyword">function</span>(<span class="variabledef">event</span>) {
+  <span class="localvariable">event</span>.<span class="property">target</span>.<span class="property">style</span>.<span class="property">backgroundColor</span> = <span class="string">&quot;&quot;</span>;
+});</pre><p><a name="key63"></a>Another event related to form inputs is <a name="key64"></a><code>change</code>. This
+is fired when the content of the input has changed... except that for
+some inputs, such as text inputs, it does not fire until the element
+is unfocused.</p><pre class="code"><span class="variable">addHandler</span>(<span class="variable">$</span>(<span class="string">&quot;textfield&quot;</span>), <span class="string">&quot;change&quot;</span>, <span class="keyword">function</span>(<span class="variabledef">event</span>) {
+  <span class="variable">print</span>(<span class="string">&quot;Content of text field changed to '&quot;</span>,
+        <span class="localvariable">event</span>.<span class="property">target</span>.<span class="property">value</span>, <span class="string">&quot;'.&quot;</span>);
+});</pre><p>You can type all you want, the event will only fire when you click
+outside of the input, press tab, or unfocus it in some other way.</p><p><a name="key65"></a>Forms also have a <a name="key66"></a><code>submit</code> event, which is fired when
+they submit. It can be stopped to prevent the submit from taking
+place. This gives us a <em>much</em> better way to do the form validation we
+saw in the previous chapter. You just register a <code>submit</code> handler,
+which stops the event when the content of the form is not valid. That
+way, when the user does not have JavaScript enabled, the form will
+still work, it just won't have instant validation.</p><p><a name="key67"></a><a name="key68"></a>Window objects have a <a name="key69"></a><code>load</code> event that fires
+when the document is fully loaded, which can be useful if your script
+needs to do some kind of initialisation that has to wait until the
+whole document is present. For example, the scripts on the pages for
+this book go over the current chapter to hide solutions to exercises.
+You can't do that when the exercises are not loaded yet. There is also
+an <a name="key70"></a><code>unload</code> event, firing when the user leaves the document, but
+this is not properly supported by all browsers.</p><p><a name="key71"></a>Most of the time it is best to leave the laying out of a
+document to the browser, but there are effects that can only be
+produced by having a piece of JavaScript set the exact sizes of some
+nodes in a document. When you do this, make sure you also listen for
+<a name="key72"></a><code>resize</code> events on the window, and re-calculate the sizes of your
+element every time the window is resized.</p></div><hr/><div class="block"><p>Finally, I have to tell you something about event handlers that you
+would rather not know. The Internet Explorer browser (which means, at
+the time of writing, the browser used by a majority of web-surfers)
+has a bug that causes values to not be cleaned up as normal: Even when
+they are no longer used, they stay in the machine's memory. This is
+known as a <a name="key73"></a>memory leak, and, once enough memory has been leaked,
+will seriously slow down a computer.</p><p>When does this leaking occur? Due to a deficiency in Internet
+Explorer's <a name="key74"></a>garbage collector, the system whose purpose it is to
+reclaim unused values, when you have a DOM node that, through one of
+its properties or in a more indirect way, refers to a normal
+JavaScript object, and this object, in turn, refers back to that DOM
+node, both objects will not be collected. This has something to do
+with the fact that DOM nodes and other JavaScript objects are
+collected by different systems ― the system that cleans up DOM nodes
+will take care to leave any nodes that are still referenced by
+JavaScript objects, and vice versa for the system that collects normal
+JavaScript values.</p><p>As the above description shows, the problem is not specifically
+related to event handlers. This code, for example, creates a bit of
+un-collectable memory:</p><pre class="code invalid"><span class="keyword">var</span> <span class="variable">jsObject</span> = {<span class="property">link</span>: <span class="variable">document</span>.<span class="property">body</span>};
+<span class="variable">document</span>.<span class="property">body</span>.<span class="property">linkBack</span> = <span class="variable">jsObject</span>;</pre><p>Even after such an Internet Explorer browser goes to a different page,
+it will still hold on to the <code>document.body</code> shown here. The reason
+this bug is often associated with event handlers is that it is
+extremely easy to make such circular links when registering a handler.
+The DOM node keeps references to its handlers, and the handler, most
+of the time, has a reference to the DOM node. Even when this reference
+is not intentionally made, JavaScript's scoping rules tend to add it
+implicitly. Consider this function:</p><pre class="code invalid"><span class="keyword">function</span> <span class="variable">addAlerter</span>(<span class="variabledef">element</span>) {
+  <span class="variable">addHandler</span>(<span class="localvariable">element</span>, <span class="string">&quot;click&quot;</span>, <span class="keyword">function</span>() {
+    <span class="variable">alert</span>(<span class="string">&quot;Alert! ALERT!&quot;</span>);
+  });
+}</pre><p>The anonymous function that is created by the <code>addAlerter</code> function
+can 'see' the <code>element</code> variable. It doesn't use it, but that does not
+matter ― just because it can see it, it will have a reference to it.
+By registering this function as an event handler on that same
+<code>element</code> object, we have created a circle.</p><p>There are three ways to deal with this problem. The first approach, a
+very popular one, is to ignore it. Most scripts will only leak a
+little bit, so it takes a long time and a lot of pages before the
+problems become noticeable. And, when the problems are so subtle,
+who's going to hold <em>you</em> responsible? Programmers given to this
+approach will often searingly denounce Microsoft for their shoddy
+programming, and state that the problem is not their fault, so <em>they</em>
+shouldn't be fixing it.</p><p>Such reasoning is not entirely without merit, of course. But when half
+your users are having problems with the web-pages you make, it is hard
+to deny that there is a practical problem. Which is why people working
+on 'serious' sites usually make an attempt not to leak any memory.
+Which brings us to the second approach: Painstakingly making sure that
+no circular references between DOM objects and regular objects are
+created. This means, for example, rewriting the above handler like
+this:</p><pre class="code"><span class="keyword">function</span> <span class="variable">addAlerter</span>(<span class="variabledef">element</span>) {
+  <span class="variable">addHandler</span>(<span class="localvariable">element</span>, <span class="string">&quot;click&quot;</span>, <span class="keyword">function</span>() {
+    <span class="variable">alert</span>(<span class="string">&quot;Alert! ALERT!&quot;</span>);
+  });
+  <span class="localvariable">element</span> = <span class="atom">null</span>;
+}</pre><p>Now the <code>element</code> variable no longer points at the DOM node, and the
+handler will not leak. This approach is viable, but requires the
+programmer to <em>really</em> pay attention.</p><p>The third solution, finally, is to not worry too much about creating
+leaky structures, but to make sure to clean them up when you are done
+with them. This means unregistering any event handlers when they are
+no longer needed, and registering an <code>onunload</code> event to unregister
+the handlers that are needed until the page is unloaded. It is
+possible to extend an event-registering system, like our <code>addHandler</code>
+function, to automatically do this. When taking this approach, you
+must keep in mind that event handlers are not the only possible source
+of memory leaks ― adding properties to DOM node objects can cause
+similar problems.</p></div><div class="navigation"><a href="chapter12.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter14.html">Next chapter &gt;&gt;</a></div><div class="footer">© <a href="mailto:marijnh@gmail.com">Marijn Haverbeke</a> (<a href="http://creativecommons.org/licenses/by/3.0/">license</a>), written March to July 2007, last modified on April 4 2012.</div></div><script type="text/javascript" src="js/mochi.js"> </script><script type="text/javascript" src="js/codemirror.js"> </script><script type="text/javascript" src="js/ejs.js"> </script></body></html>

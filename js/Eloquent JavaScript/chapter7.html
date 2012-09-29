@@ -1,0 +1,690 @@
+<html><head><link rel="stylesheet" type="text/css" href="css/book.css"/><link rel="stylesheet" type="text/css" href="css/highlight.css"/><link rel="stylesheet" type="text/css" href="css/console.css"/><link rel="stylesheet" type="text/css" href="css/codemirror.css"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>Searching -- Eloquent JavaScript</title></head><body><script type="text/javascript" src="js/before.js"> </script><div class="content"><script type="text/javascript">var chapterTag = 'search';</script><div class="navigation"><a href="chapter6.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter8.html">Next chapter &gt;&gt;</a></div><h1><span class="number">Chapter 7: </span>Searching</h1><div class="block"><p>This chapter does not introduce any new JavaScript-specific concepts.
+Instead, we will go through the solution to two problems, discussing
+some interesting algorithms and techniques along the way. If this does
+not sound interesting to you, it is safe to skip to the next chapter.</p></div><hr/><div class="block"><p>Let me introduce our first problem. Take a look at this map. It shows
+Hiva Oa, a small tropical island in the Pacific Ocean.</p><div class="illustration"><img src="img/Hiva Oa.png"/></div><p>The grey lines are roads, and the numbers next to them are the lengths
+of these roads. Imagine we need a program that finds the shortest
+route between two points on Hiva Oa. How could we approach that? Think
+about this for a moment.</p><p>No really. Don't just steamroll on to the next paragraph. Try to
+seriously think of some ways you could do this, and consider the
+issues you would come up against. When reading a technical book, it is
+way too easy to just zoom over the text, nod solemnly, and promptly
+forget what you have read. If you make a sincere effort to solve a
+problem, it becomes <em>your</em> problem, and its solution will be more
+meaningful.</p></div><hr/><div class="block"><p>The first aspect of this problem is, again, representing our data. The
+information in the picture does not mean much to our computer. We
+could try writing a program that looks at the map and extracts the
+information in it... but that can get complicated. If we had
+twenty-thousand maps to interpret, this would be a good idea, in this
+case we will do the interpretation ourself and transcribe the map into
+a more computer-friendly format.</p><p>What does our program need to know? It has to be able to look up which
+locations are connected, and how long the roads between them are. The
+places and roads on the island form a <a name="key1"></a>graph, as mathematicians call
+it. There are many ways to store graphs. A simple possibility is to
+just store an array of road objects, each of which contains properties
+naming its two endpoints and its length...</p><pre class="code"><span class="keyword">var</span> <span class="variable">roads</span> = [{<span class="property">point1</span>: <span class="string">&quot;Point Kiukiu&quot;</span>, <span class="property">point2</span>: <span class="string">&quot;Hanaiapa&quot;</span>, <span class="property">length</span>: <span class="atom">19</span>},
+             {<span class="property">point1</span>: <span class="string">&quot;Point Kiukiu&quot;</span>, <span class="property">point2</span>: <span class="string">&quot;Mt Feani&quot;</span>, <span class="property">length</span>: <span class="atom">15</span>}
+             <span class="comment">/* and so on */</span>];</pre><p>However, it turns out that the program, as it is working out a route,
+will very often need to get a list of all the roads that start at a
+certain location, like a person standing on a crossroads will look at
+a signpost and read &quot;Hanaiapa: 19km, Mount Feani: 15km&quot;. It would be
+nice if this was easy (and quick) to do.</p><p>With the representation given above, we have to sift through the whole
+list of roads, picking out the relevant ones, every time we want this
+signpost list. A better approach would be to store this list directly.
+For example, use an object that associates place-names with signpost
+lists:</p><pre class="code"><span class="keyword">var</span> <span class="variable">roads</span> = {<span class="string">&quot;Point Kiukiu&quot;</span>: [{<span class="property">to</span>: <span class="string">&quot;Hanaiapa&quot;</span>, <span class="property">distance</span>: <span class="atom">19</span>},
+                              {<span class="property">to</span>: <span class="string">&quot;Mt Feani&quot;</span>, <span class="property">distance</span>: <span class="atom">15</span>},
+                              {<span class="property">to</span>: <span class="string">&quot;Taaoa&quot;</span>, <span class="property">distance</span>: <span class="atom">15</span>}],
+             <span class="string">&quot;Taaoa&quot;</span>: [<span class="comment">/* et cetera */</span>]};</pre><p>When we have this object, getting the roads that leave from Point
+Kiukiu is just a matter of looking at <code>roads[&quot;Point Kiukiu&quot;]</code>.</p></div><hr/><div class="block"><p>However, this new representation does contain duplicate information:
+The road between A and B is listed both under A and under B. The first
+representation was already a lot of work to type in, this one is even
+worse.</p><p>Fortunately, we have at our command the computer's talent for
+repetitive work. We can specify the roads once, and have the correct
+data structure be generated by the computer. First, initialise an
+empty object called <code>roads</code>, and write a function <code>makeRoad</code>:</p><pre class="code"><span class="keyword">var</span> <span class="variable">roads</span> = {};
+<span class="keyword">function</span> <span class="variable">makeRoad</span>(<span class="variabledef">from</span>, <span class="variabledef">to</span>, <span class="variabledef">length</span>) {
+  <span class="keyword">function</span> <span class="variabledef">addRoad</span>(<span class="variabledef">from</span>, <span class="variabledef">to</span>) {
+    <span class="keyword">if</span> (!(<span class="localvariable">from</span> in <span class="variable">roads</span>))
+      <span class="variable">roads</span>[<span class="localvariable">from</span>] = [];
+    <span class="variable">roads</span>[<span class="localvariable">from</span>].<span class="property">push</span>({<span class="property">to</span>: <span class="localvariable">to</span>, <span class="property">distance</span>: <span class="localvariable">length</span>});
+  }
+  <span class="localvariable">addRoad</span>(<span class="localvariable">from</span>, <span class="localvariable">to</span>);
+  <span class="localvariable">addRoad</span>(<span class="localvariable">to</span>, <span class="localvariable">from</span>);
+}</pre><p>Nice, huh? Notice how the inner function, <code>addRoad</code>, uses the same
+names (<code>from</code>, <code>to</code>) for its parameters as the outer function. These
+will not interfere: inside <code>addRoad</code> they refer to <code>addRoad</code>'s
+parameters, and outside it they refer to <code>makeRoad</code>'s parameters.</p><p>The <code>if</code> statement in <code>addRoad</code> makes sure that there is an array of
+destinations associated with the location named by <code>from</code>, if there
+isn't already one it puts in an empty array. This way, the next line
+can assume there is such an array and safely push the new road onto
+it.</p><p>Now the map information looks like this:</p><pre class="code"><span class="variable">makeRoad</span>(<span class="string">&quot;Point Kiukiu&quot;</span>, <span class="string">&quot;Hanaiapa&quot;</span>, <span class="atom">19</span>);
+<span class="variable">makeRoad</span>(<span class="string">&quot;Point Kiukiu&quot;</span>, <span class="string">&quot;Mt Feani&quot;</span>, <span class="atom">15</span>);
+<span class="variable">makeRoad</span>(<span class="string">&quot;Point Kiukiu&quot;</span>, <span class="string">&quot;Taaoa&quot;</span>, <span class="atom">15</span>);
+<span class="comment">// ...</span></pre></div><hr/><div class="block"><a name="exercise1"></a><div class="exercisenum">Ex. 7.1</div><div class="exercise"><p>In the above description, the string <code>&quot;Point Kiukiu&quot;</code> still occurs
+three times in a row. We could make our description even more succinct
+by allowing multiple roads to be specified in one line.</p><p>Write a function <code>makeRoads</code> that takes any uneven number of
+arguments. The first argument is always the starting point of the
+roads, and every pair of arguments after that gives an ending point
+and a distance.</p><p>Do not duplicate the functionality of <code>makeRoad</code>, but have <code>makeRoads</code>
+call <code>makeRoad</code> to do the actual road-making.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">makeRoads</span>(<span class="variabledef">start</span>) {
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">1</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">arguments</span>.<span class="property">length</span>; <span class="localvariable">i</span> += <span class="atom">2</span>)
+    <span class="variable">makeRoad</span>(<span class="localvariable">start</span>, <span class="localvariable">arguments</span>[<span class="localvariable">i</span>], <span class="localvariable">arguments</span>[<span class="localvariable">i</span> + <span class="atom">1</span>]);
+}</pre><p>This function uses one named parameter, <code>start</code>, and gets the other
+parameters from the <code>arguments</code> (quasi-) array. <code>i</code> starts at <code>1</code>
+because it has to skip this first parameter. <code>i += 2</code> is short for <code>i
+= i + 2</code>, as you might recall.</p><pre class="code"><span class="keyword">var</span> <span class="variable">roads</span> = {};
+<span class="variable">makeRoads</span>(<span class="string">&quot;Point Kiukiu&quot;</span>, <span class="string">&quot;Hanaiapa&quot;</span>, <span class="atom">19</span>,
+          <span class="string">&quot;Mt Feani&quot;</span>, <span class="atom">15</span>, <span class="string">&quot;Taaoa&quot;</span>, <span class="atom">15</span>);
+<span class="variable">makeRoads</span>(<span class="string">&quot;Airport&quot;</span>, <span class="string">&quot;Hanaiapa&quot;</span>, <span class="atom">6</span>, <span class="string">&quot;Mt Feani&quot;</span>, <span class="atom">5</span>,
+          <span class="string">&quot;Atuona&quot;</span>, <span class="atom">4</span>, <span class="string">&quot;Mt Ootua&quot;</span>, <span class="atom">11</span>);
+<span class="variable">makeRoads</span>(<span class="string">&quot;Mt Temetiu&quot;</span>, <span class="string">&quot;Mt Feani&quot;</span>, <span class="atom">8</span>, <span class="string">&quot;Taaoa&quot;</span>, <span class="atom">4</span>);
+<span class="variable">makeRoads</span>(<span class="string">&quot;Atuona&quot;</span>, <span class="string">&quot;Taaoa&quot;</span>, <span class="atom">3</span>, <span class="string">&quot;Hanakee pearl lodge&quot;</span>, <span class="atom">1</span>);
+<span class="variable">makeRoads</span>(<span class="string">&quot;Cemetery&quot;</span>, <span class="string">&quot;Hanakee pearl lodge&quot;</span>, <span class="atom">6</span>, <span class="string">&quot;Mt Ootua&quot;</span>, <span class="atom">5</span>);
+<span class="variable">makeRoads</span>(<span class="string">&quot;Hanapaoa&quot;</span>, <span class="string">&quot;Mt Ootua&quot;</span>, <span class="atom">3</span>);
+<span class="variable">makeRoads</span>(<span class="string">&quot;Puamua&quot;</span>, <span class="string">&quot;Mt Ootua&quot;</span>, <span class="atom">13</span>, <span class="string">&quot;Point Teohotepapapa&quot;</span>, <span class="atom">14</span>);
+
+<span class="variable">show</span>(<span class="variable">roads</span>[<span class="string">&quot;Airport&quot;</span>]);</pre></div></div><hr/><div class="block"><p>We managed to considerably shorten our description of the
+road-information by defining some convenient operations. You could say
+we expressed the information more succinctly by expanding our
+vocabulary. <a name="key2"></a>Defining a 'little language'
+like this is often a very powerful technique ― when, at any time, you
+find yourself writing repetitive or redundant code, stop and try to
+come up with a vocabulary that makes it shorter and denser.</p><p>Redundant code is not only a bore to write, it is also error-prone,
+people pay less attention when doing something that doesn't require
+them to think. On top of that, repetitive code is hard to change,
+because structure that is repeated a hundred times has to be changed a
+hundred times when it turns out to be incorrect or suboptimal.</p></div><hr/><div class="block"><p>If you ran all the pieces of code above, you should now have a
+variable named <code>roads</code> that contains all the roads on the island. When
+we need the roads starting from a certain place, we could just do
+<code>roads[place]</code>. But then, when someone makes a typo in a place name,
+which is not unlikely with these names, he will get <code>undefined</code>
+instead of the array he expects, and strange errors will follow.
+Instead, we will use a function that retrieves the road arrays, and
+yells at us when we give it an unknown place name:</p><pre class="code"><span class="keyword">function</span> <span class="variable">roadsFrom</span>(<span class="variabledef">place</span>) {
+  <span class="keyword">var</span> <span class="variabledef">found</span> = <span class="variable">roads</span>[<span class="localvariable">place</span>];
+  <span class="keyword">if</span> (<span class="localvariable">found</span> == <span class="atom">undefined</span>)
+    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="variable">Error</span>(<span class="string">&quot;No place named '&quot;</span> + <span class="localvariable">place</span> + <span class="string">&quot;' found.&quot;</span>);
+  <span class="keyword">else</span>
+    <span class="keyword">return</span> <span class="localvariable">found</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">roadsFrom</span>(<span class="string">&quot;Puamua&quot;</span>));</pre></div><hr/><div class="block"><p>Here is a first stab at a path-finding algorithm, the gambler's method:</p><pre class="code"><span class="keyword">function</span> <span class="variable">gamblerPath</span>(<span class="variabledef">from</span>, <span class="variabledef">to</span>) {
+  <span class="keyword">function</span> <span class="variabledef">randomInteger</span>(<span class="variabledef">below</span>) {
+    <span class="keyword">return</span> <span class="variable">Math</span>.<span class="property">floor</span>(<span class="variable">Math</span>.<span class="property">random</span>() * <span class="localvariable">below</span>);
+  }
+  <span class="keyword">function</span> <span class="variabledef">randomDirection</span>(<span class="variabledef">from</span>) {
+    <span class="keyword">var</span> <span class="variabledef">options</span> = <span class="variable">roadsFrom</span>(<span class="localvariable">from</span>);
+    <span class="keyword">return</span> <span class="localvariable">options</span>[<span class="localvariable">randomInteger</span>(<span class="localvariable">options</span>.<span class="property">length</span>)].<span class="property">to</span>;
+  }
+
+  <span class="keyword">var</span> <span class="variabledef">path</span> = [];
+  <span class="keyword">while</span> (<span class="atom">true</span>) {
+    <span class="localvariable">path</span>.<span class="property">push</span>(<span class="localvariable">from</span>);
+    <span class="keyword">if</span> (<span class="localvariable">from</span> == <span class="localvariable">to</span>)
+      <span class="keyword">break</span>;
+    <span class="localvariable">from</span> = <span class="localvariable">randomDirection</span>(<span class="localvariable">from</span>);
+  }
+  <span class="keyword">return</span> <span class="localvariable">path</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">gamblerPath</span>(<span class="string">&quot;Hanaiapa&quot;</span>, <span class="string">&quot;Mt Feani&quot;</span>));</pre><p>At every split in the road, the gambler rolls his dice to decide which
+road he shall take. If the dice sends him back the way he came, so be
+it. Sooner or later, he will arrive at his destination, since all
+places on the island are connected by roads.</p><p>The most confusing line is probably the one containing
+<a name="key3"></a><code>Math.random</code>. This function returns a pseudo-random<a class="footref" href="#footnote1">1</a> number
+between 0 and 1. Try calling it a few times from the console, it will
+(most likely) give you a different number every time. The function
+<code>randomInteger</code> multiplies this number by the argument it is given,
+and rounds the result down with <code>Math.floor</code>. Thus, for example,
+<code>randomInteger(3)</code> will produce the number <code>0</code>, <code>1</code>, or <code>2</code>.</p></div><hr/><div class="block"><p>The gambler's method is the way to go for those who abhor structure
+and planning, who desperately search for adventure. We set out to
+write a program that could find the <em>shortest</em> route between places
+though, so something else will be needed.</p><p>A very straightforward approach to solving such a problem is called
+'<a name="key4"></a>generate and test'. It goes like this:</p><ol><li>Generate all possible routes.</li><li>In this set, find the shortest one that actually connects the start point to the end point.</li></ol><p>Step two is not hard. Step one is a little problematic. If you allow
+routes with circles in them, there is an infinite amount of routes. Of
+course, routes with circles in them are unlikely to be the shortest
+route to anywhere, and routes that do not start at the start point do
+not have to be considered either. For a small graph like Hiva Oa, it
+should be possible to generate all non-cyclic (circle-free) routes
+starting from a certain point.</p></div><hr/><div class="block"><p>But first, we will need some new tools. The first is a function named
+<code>member</code>, which is used to determine whether an element is found
+within an array. The route will be kept as an array of names, and when
+arriving at a new place, the algorithm calls <code>member</code> to check whether
+we have been at that place already. It could look like this:</p><pre class="code"><span class="keyword">function</span> <span class="variable">member</span>(<span class="variabledef">array</span>, <span class="variabledef">value</span>) {
+  <span class="keyword">var</span> <span class="variabledef">found</span> = <span class="atom">false</span>;
+  <span class="variable">forEach</span>(<span class="localvariable">array</span>, <span class="keyword">function</span>(<span class="variabledef">element</span>) {
+    <span class="keyword">if</span> (<span class="localvariable">element</span> === <span class="localvariable">value</span>)
+      <span class="localvariable">found</span> = <span class="atom">true</span>;
+  });
+  <span class="keyword">return</span> <span class="localvariable">found</span>;
+}
+
+<span class="variable">print</span>(<span class="variable">member</span>([<span class="atom">6</span>, <span class="atom">7</span>, <span class="string">&quot;Bordeaux&quot;</span>], <span class="atom">7</span>));</pre><p>However, this will go over the whole array, even if the value is found
+immediately at the first position. What wastefulness. When using a
+<code>for</code> loop, you can use the <code>break</code> statement to jump out of it, but
+in a <code>forEach</code> construct this will not work, because the body of the
+loop is a function, and <code>break</code> statements do not jump out of
+functions. One solution could be to adjust <code>forEach</code> to recognise a
+certain kind of exceptions as signalling a break.</p><pre class="code"><span class="keyword">var</span> <span class="variable">Break</span> = {<span class="property">toString</span>: <span class="keyword">function</span>() {<span class="keyword">return</span> <span class="string">&quot;Break&quot;</span>;}};
+
+<span class="keyword">function</span> <span class="variable">forEach</span>(<span class="variabledef">array</span>, <span class="variabledef">action</span>) {
+  <span class="keyword">try</span> {
+    <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">0</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">array</span>.<span class="property">length</span>; <span class="localvariable">i</span>++)
+      <span class="localvariable">action</span>(<span class="localvariable">array</span>[<span class="localvariable">i</span>]);
+  }
+  <span class="keyword">catch</span> (<span class="variabledef">exception</span>) {
+    <span class="keyword">if</span> (<span class="localvariable">exception</span> != <span class="variable">Break</span>)
+      <span class="keyword">throw</span> <span class="localvariable">exception</span>;
+  }
+}</pre><p>Now, if the <code>action</code> function throws <code>Break</code>, <code>forEach</code> will absorb
+the exception and stop looping. The object stored in the variable
+<code>Break</code> is used purely as a thing to compare with. The only reason I
+gave it a <code>toString</code> property is that this might be useful to figure
+out what kind of strange value you are dealing with if you somehow end
+up with a <code>Break</code> exception outside of a <code>forEach</code>.</p></div><hr/><div class="block"><p>Having a way to break out of <code>forEach</code> loops can be very useful, but
+in the case of the <code>member</code> function the result is still rather ugly,
+because you need to specifically store the result and later return it.
+We could add yet another kind of exception, <code>Return</code>, which can be
+given a <code>value</code> property, and have <code>forEach</code> return this value when
+such an exception is thrown, but this would be terribly ad-hoc and
+messy. What we really need is a whole new higher-order function,
+called <a name="key5"></a><code>any</code> (or sometimes <code>some</code>). It looks like this:</p><pre class="code"><span class="keyword">function</span> <span class="variable">any</span>(<span class="variabledef">test</span>, <span class="variabledef">array</span>) {
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">0</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">array</span>.<span class="property">length</span>; <span class="localvariable">i</span>++) {
+    <span class="keyword">var</span> <span class="variabledef">found</span> = <span class="localvariable">test</span>(<span class="localvariable">array</span>[<span class="localvariable">i</span>]);
+    <span class="keyword">if</span> (<span class="localvariable">found</span>)
+      <span class="keyword">return</span> <span class="localvariable">found</span>;
+  }
+  <span class="keyword">return</span> <span class="atom">false</span>;
+}
+
+<span class="keyword">function</span> <span class="variable">member</span>(<span class="variabledef">array</span>, <span class="variabledef">value</span>) {
+  <span class="keyword">return</span> <span class="variable">any</span>(<span class="variable">partial</span>(<span class="variable">op</span>[<span class="string">&quot;===&quot;</span>], <span class="localvariable">value</span>), <span class="localvariable">array</span>);
+}
+
+<span class="variable">print</span>(<span class="variable">member</span>([<span class="string">&quot;Fear&quot;</span>, <span class="string">&quot;Loathing&quot;</span>], <span class="string">&quot;Denial&quot;</span>));</pre><p><code>any</code> goes over the elements in an array, from left to right, and
+applies the test function to them. The first time this returns a
+true-ish value, it returns that value. If no true-ish value is found,
+<code>false</code> is returned. Calling <code>any(test, array)</code> is more or less
+equivalent to doing <code>test(array[0]) || test(array[1]) || ...</code>
+etcetera.</p></div><hr/><div class="block"><p>Just like <code>&amp;&amp;</code> is the companion of <code>||</code>, <code>any</code> has a companion called
+<a name="key6"></a><code>every</code>:</p><pre class="code"><span class="keyword">function</span> <span class="variable">every</span>(<span class="variabledef">test</span>, <span class="variabledef">array</span>) {
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">0</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">array</span>.<span class="property">length</span>; <span class="localvariable">i</span>++) {
+    <span class="keyword">var</span> <span class="variabledef">found</span> = <span class="localvariable">test</span>(<span class="localvariable">array</span>[<span class="localvariable">i</span>]);
+    <span class="keyword">if</span> (!<span class="localvariable">found</span>)
+      <span class="keyword">return</span> <span class="localvariable">found</span>;
+  }
+  <span class="keyword">return</span> <span class="atom">true</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">every</span>(<span class="variable">partial</span>(<span class="variable">op</span>[<span class="string">&quot;!=&quot;</span>], <span class="atom">0</span>), [<span class="atom">1</span>, <span class="atom">2</span>, -<span class="atom">1</span>]));</pre></div><hr/><div class="block"><p>Another function we will need is <code>flatten</code>. This function takes an
+array of arrays, and puts the elements of the arrays together in one
+big array.</p><pre class="code">  <span class="keyword">function</span> <span class="variable">flatten</span>(<span class="variabledef">arrays</span>) {
+    <span class="keyword">var</span> <span class="variabledef">result</span> = [];
+    <span class="variable">forEach</span>(<span class="localvariable">arrays</span>, <span class="keyword">function</span> (<span class="variabledef">array</span>) {
+      <span class="variable">forEach</span>(<span class="localvariable">array</span>, <span class="keyword">function</span> (<span class="variabledef">element</span>){<span class="localvariable">result</span>.<span class="property">push</span>(<span class="localvariable">element</span>);});
+    });
+    <span class="keyword">return</span> <span class="localvariable">result</span>;
+  }</pre><p>The same could have been done using the <code>concat</code> method and some kind
+of <code>reduce</code>, but this would be less efficient. Just like repeatedly
+concatenating strings together is slower than putting them into an
+array and then calling <code>join</code>, repeatedly concatenating arrays
+produces a lot of unnecessary intermediary array values.</p></div><hr/><div class="block"><a name="exercise2"></a><div class="exercisenum">Ex. 7.2</div><div class="exercise"><p>Before starting to generate routes, we need one more higher-order
+function. This one is called <a name="key7"></a><code>filter</code>. Like <code>map</code>, it takes a
+function and an array as arguments, and produces a new array, but
+instead of putting the results of calling the function in the new
+array, it produces an array with only those values from the old array
+for which the given function returns a true-like value. Write this
+function.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">filter</span>(<span class="variabledef">test</span>, <span class="variabledef">array</span>) {
+  <span class="keyword">var</span> <span class="variabledef">result</span> = [];
+  <span class="variable">forEach</span>(<span class="localvariable">array</span>, <span class="keyword">function</span> (<span class="variabledef">element</span>) {
+    <span class="keyword">if</span> (<span class="localvariable">test</span>(<span class="localvariable">element</span>))
+      <span class="localvariable">result</span>.<span class="property">push</span>(<span class="localvariable">element</span>);
+  });
+  <span class="keyword">return</span> <span class="localvariable">result</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">filter</span>(<span class="variable">partial</span>(<span class="variable">op</span>[<span class="string">&quot;&gt;&quot;</span>], <span class="atom">5</span>), [<span class="atom">0</span>, <span class="atom">4</span>, <span class="atom">8</span>, <span class="atom">12</span>]));</pre><p>(If the result of that application of <code>filter</code> surprises you, remember
+that the argument given to <code>partial</code> is used as the <em>first</em> argument
+of the function, so it ends up to the left of the <code>&gt;</code>.)</p></div></div><hr/><div class="block"><p>Imagine what an algorithm to generate routes would look like ― it
+starts at the starting location, and starts to generate a route for
+every road leaving there. At the end of each of these roads it
+continues to generate more routes. It doesn't run along one road, it
+branches out. Because of this, <a name="key8"></a>recursion is a natural way to model
+it.</p><pre class="code"><span class="keyword">function</span> <span class="variable">possibleRoutes</span>(<span class="variabledef">from</span>, <span class="variabledef">to</span>) {
+  <span class="keyword">function</span> <span class="variabledef">findRoutes</span>(<span class="variabledef">route</span>) {
+    <span class="keyword">function</span> <span class="variabledef">notVisited</span>(<span class="variabledef">road</span>) {
+      <span class="keyword">return</span> !<span class="variable">member</span>(<span class="localvariable">route</span>.<span class="property">places</span>, <span class="localvariable">road</span>.<span class="property">to</span>);
+    }
+    <span class="keyword">function</span> <span class="variabledef">continueRoute</span>(<span class="variabledef">road</span>) {
+      <span class="keyword">return</span> <span class="localvariable">findRoutes</span>({<span class="property">places</span>: <span class="localvariable">route</span>.<span class="property">places</span>.<span class="property">concat</span>([<span class="localvariable">road</span>.<span class="property">to</span>]),
+                         <span class="property">length</span>: <span class="localvariable">route</span>.<span class="property">length</span> + <span class="localvariable">road</span>.<span class="property">distance</span>});
+    }
+
+    <span class="keyword">var</span> <span class="variabledef">end</span> = <span class="localvariable">route</span>.<span class="property">places</span>[<span class="localvariable">route</span>.<span class="property">places</span>.<span class="property">length</span> - <span class="atom">1</span>];
+    <span class="keyword">if</span> (<span class="localvariable">end</span> == <span class="localvariable">to</span>)
+      <span class="keyword">return</span> [<span class="localvariable">route</span>];
+    <span class="keyword">else</span>
+      <span class="keyword">return</span> <span class="variable">flatten</span>(<span class="variable">map</span>(<span class="localvariable">continueRoute</span>, <span class="variable">filter</span>(<span class="localvariable">notVisited</span>,
+                                               <span class="variable">roadsFrom</span>(<span class="localvariable">end</span>))));
+  }
+  <span class="keyword">return</span> <span class="localvariable">findRoutes</span>({<span class="property">places</span>: [<span class="localvariable">from</span>], <span class="property">length</span>: <span class="atom">0</span>});
+}
+
+<span class="variable">show</span>(<span class="variable">possibleRoutes</span>(<span class="string">&quot;Point Teohotepapapa&quot;</span>, <span class="string">&quot;Point Kiukiu&quot;</span>).<span class="property">length</span>);
+<span class="variable">show</span>(<span class="variable">possibleRoutes</span>(<span class="string">&quot;Hanapaoa&quot;</span>, <span class="string">&quot;Mt Ootua&quot;</span>));</pre><p>The function returns an array of route objects, each of which contains
+an array of places that the route passes, and a length. <code>findRoutes</code>
+recursively continues a route, returning an array with every possible
+extension of that route. When the end of a route is the place where we
+want to go, it just returns that route, since continuing past that
+place would be pointless. If it is another place, we must go on. The
+<code>flatten</code>/<code>map</code>/<code>filter</code> line is probably the hardest to read. This is
+what it says: 'Take all the roads going from the current location,
+discard the ones that go to places that this route has already
+visited. Continue each of these roads, which will give an array of
+finished routes for each of them, then put all these routes into a
+single big array that we return.'</p><p>That line does a lot. This is why good abstractions help: They allow
+you to say complicated things without typing screenfulls of code.</p><p>Doesn't this recurse forever, seeing how it keeps calling itself (via
+<code>continueRoute</code>)? No, at some point, all outgoing roads will go to
+places that a route has already passed, and the result of <code>filter</code>
+will be an empty array. Mapping over an empty array produces an empty
+array, and flattening that still gives an empty array. So calling
+<code>findRoutes</code> on a dead end produces an empty array, meaning 'there are
+no ways to continue this route'.</p><p>Notice that places are appended to routes by using <a name="key9"></a><code>concat</code>, not
+<a name="key10"></a><code>push</code>. The <code>concat</code> method creates a new array, while <code>push</code>
+modifies the existing array. Because the function might branch off
+several routes from a single partial route, we must not modify the
+array that represents the original route, because it must be used
+several times.</p></div><hr/><div class="block"><a name="exercise3"></a><div class="exercisenum">Ex. 7.3</div><div class="exercise"><p>Now that we have all possible routes, let us try to find the shortest
+one. Write a function <code>shortestRoute</code> that, like <code>possibleRoutes</code>,
+takes the names of a starting and ending location as arguments. It
+returns a single route object, of the type that <code>possibleRoutes</code>
+produces.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">shortestRoute</span>(<span class="variabledef">from</span>, <span class="variabledef">to</span>) {
+  <span class="keyword">var</span> <span class="variabledef">currentShortest</span> = <span class="atom">null</span>;
+  <span class="variable">forEach</span>(<span class="variable">possibleRoutes</span>(<span class="localvariable">from</span>, <span class="localvariable">to</span>), <span class="keyword">function</span>(<span class="variabledef">route</span>) {
+    <span class="keyword">if</span> (!<span class="localvariable">currentShortest</span> || <span class="localvariable">currentShortest</span>.<span class="property">length</span> &gt; <span class="localvariable">route</span>.<span class="property">length</span>)
+      <span class="localvariable">currentShortest</span> = <span class="localvariable">route</span>;
+  });
+  <span class="keyword">return</span> <span class="localvariable">currentShortest</span>;
+}</pre><p>The tricky thing in 'minimising' or 'maximising' algorithms is to not
+screw up when given an empty array. In this case, we happen to know
+that there is at least one road between every two places, so we could
+just ignore it. But that would be a bit lame. What if the road from
+Puamua to Mount Ootua, which is steep and muddy, is washed away by a
+rainstorm? It would be a shame if this caused our function to break as
+well, so it takes care to return <code>null</code> when no routes are found.</p><p>Then, the very functional, abstract-everything-we-can approach:</p><pre class="code"><span class="keyword">function</span> <span class="variable">minimise</span>(<span class="variabledef">func</span>, <span class="variabledef">array</span>) {
+  <span class="keyword">var</span> <span class="variabledef">minScore</span> = <span class="atom">null</span>;
+  <span class="keyword">var</span> <span class="variabledef">found</span> = <span class="atom">null</span>;
+  <span class="variable">forEach</span>(<span class="localvariable">array</span>, <span class="keyword">function</span>(<span class="variabledef">element</span>) {
+    <span class="keyword">var</span> <span class="variabledef">score</span> = <span class="localvariable">func</span>(<span class="localvariable">element</span>);
+    <span class="keyword">if</span> (<span class="localvariable">minScore</span> == <span class="atom">null</span> || <span class="localvariable">score</span> &lt; <span class="localvariable">minScore</span>) {
+      <span class="localvariable">minScore</span> = <span class="localvariable">score</span>;
+      <span class="localvariable">found</span> = <span class="localvariable">element</span>;
+    }
+  });
+  <span class="keyword">return</span> <span class="localvariable">found</span>;
+}
+
+<span class="keyword">function</span> <span class="variable">getProperty</span>(<span class="variabledef">propName</span>) {
+  <span class="keyword">return</span> <span class="keyword">function</span>(<span class="variabledef">object</span>) {
+    <span class="keyword">return</span> <span class="localvariable">object</span>[<span class="localvariable">propName</span>];
+  };
+}
+
+<span class="keyword">function</span> <span class="variable">shortestRoute</span>(<span class="variabledef">from</span>, <span class="variabledef">to</span>) {
+  <span class="keyword">return</span> <span class="variable">minimise</span>(<span class="variable">getProperty</span>(<span class="string">&quot;length&quot;</span>), <span class="variable">possibleRoutes</span>(<span class="localvariable">from</span>, <span class="localvariable">to</span>));
+}</pre><p>Unfortunately, it is three times longer than the other version. In
+programs where you need to minimise several things it might be a good
+idea to write the generic algorithm like this, so you can re-use it.
+In most cases the first version is probably good enough.</p><p>Note the <a name="key11"></a><code>getProperty</code> function though, it is often useful when
+doing functional programming with objects.</p></div></div><hr/><div class="block"><p>Let us see what route our algorithm comes up with between Point Kiukiu
+and Point Teohotepapapa...</p><pre class="code"><span class="variable">show</span>(<span class="variable">shortestRoute</span>(<span class="string">&quot;Point Kiukiu&quot;</span>, <span class="string">&quot;Point Teohotepapapa&quot;</span>).<span class="property">places</span>);</pre></div><hr/><div class="block"><p>On a small island like Hiva Oa, it is not too much work to generate
+all possible routes. If you try to do that on a reasonably detailed
+map of, say, Belgium, it is going to take an absurdly long time, not
+to mention an absurd amount of memory. Still, you have probably seen
+those online route-planners. These give you a more or less optimal
+route through a gigantic maze of roads in just a few seconds. How do
+they do it?</p><p>If you are paying attention, you may have noticed that it is not
+necessary to generate all routes all the way to the end. If we start
+comparing routes <em>while</em> we are building them, we can avoid building
+this big set of routes, and, as soon as we have found a single route
+to our destination, we can stop extending routes that are already
+longer than that route.</p></div><hr/><div class="block"><p>To try this out, we will use a 20 by 20 grid as our map:</p><div class="illustration"><img src="img/height.png"/></div><p>What you see here is an elevation map of a mountain landscape. The
+yellow spots are the peaks, and the blue spots the valleys. The area
+is divided into squares with a size of a hundred meters. We have at
+our disposal a function <code>heightAt</code>, which can give us the height, in
+meters, of any square on that map, where squares are represented by
+objects with <code>x</code> and <code>y</code> properties.</p><pre class="code"><span class="variable">print</span>(<span class="variable">heightAt</span>({<span class="property">x</span>: <span class="atom">0</span>, <span class="property">y</span>: <span class="atom">0</span>}));
+<span class="variable">print</span>(<span class="variable">heightAt</span>({<span class="property">x</span>: <span class="atom">11</span>, <span class="property">y</span>: <span class="atom">18</span>}));</pre></div><hr/><div class="block"><p>We want to cross this landscape, on foot, from the top left to the
+bottom right. A grid can be approached like a graph. Every square is a
+node, which is connected to the squares around it.</p><p>We do not like wasting energy, so we would prefer to take the easiest
+route possible. Going uphill is heavier than going downhill, and going
+downhill is heavier than going level<a class="footref" href="#footnote2">2</a>. This function calculates the
+amount of 'weighted meters', between two adjacent squares, which
+represents how tired you get from walking (or climbing) between them.
+Going uphill is counted as twice as heavy as going downhill.</p><pre class="code"><span class="keyword">function</span> <span class="variable">weightedDistance</span>(<span class="variabledef">pointA</span>, <span class="variabledef">pointB</span>) {
+  <span class="keyword">var</span> <span class="variabledef">heightDifference</span> = <span class="variable">heightAt</span>(<span class="localvariable">pointB</span>) - <span class="variable">heightAt</span>(<span class="localvariable">pointA</span>);
+  <span class="keyword">var</span> <span class="variabledef">climbFactor</span> = (<span class="localvariable">heightDifference</span> &lt; <span class="atom">0</span> ? <span class="atom">1</span> : <span class="atom">2</span>);
+  <span class="keyword">var</span> <span class="variabledef">flatDistance</span> = (<span class="localvariable">pointA</span>.<span class="property">x</span> == <span class="localvariable">pointB</span>.<span class="property">x</span> || <span class="localvariable">pointA</span>.<span class="property">y</span> == <span class="localvariable">pointB</span>.<span class="property">y</span> ? <span class="atom">100</span> : <span class="atom">141</span>);
+  <span class="keyword">return</span> <span class="localvariable">flatDistance</span> + <span class="localvariable">climbFactor</span> * <span class="variable">Math</span>.<span class="property">abs</span>(<span class="localvariable">heightDifference</span>);
+}</pre><p>Note the <code>flatDistance</code> calculation. If the two points are on the same
+row or column, they are right next to each other, and the distance
+between them is a hundred meters. Otherwise, they are assumed to
+be diagonally adjacent, and the diagonal distance between two
+squares of this size is a hundred times the square root of two, which
+is approximately <code>141</code>. One is not allowed to call this function for
+squares that are further than one step apart. (It could double-check
+this... but it is too lazy.)</p></div><hr/><div class="block"><p>Points on the map are represented by objects containing <code>x</code> and <code>y</code>
+properties. These three functions are useful when working with such
+objects:</p><pre class="code"><span class="keyword">function</span> <span class="variable">point</span>(<span class="variabledef">x</span>, <span class="variabledef">y</span>) {
+  <span class="keyword">return</span> {<span class="property">x</span>: <span class="localvariable">x</span>, <span class="property">y</span>: <span class="localvariable">y</span>};
+}
+
+<span class="keyword">function</span> <span class="variable">addPoints</span>(<span class="variabledef">a</span>, <span class="variabledef">b</span>) {
+  <span class="keyword">return</span> <span class="variable">point</span>(<span class="localvariable">a</span>.<span class="property">x</span> + <span class="localvariable">b</span>.<span class="property">x</span>, <span class="localvariable">a</span>.<span class="property">y</span> + <span class="localvariable">b</span>.<span class="property">y</span>);
+}
+
+<span class="keyword">function</span> <span class="variable">samePoint</span>(<span class="variabledef">a</span>, <span class="variabledef">b</span>) {
+  <span class="keyword">return</span> <span class="localvariable">a</span>.<span class="property">x</span> == <span class="localvariable">b</span>.<span class="property">x</span> &amp;&amp; <span class="localvariable">a</span>.<span class="property">y</span> == <span class="localvariable">b</span>.<span class="property">y</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">samePoint</span>(<span class="variable">addPoints</span>(<span class="variable">point</span>(<span class="atom">10</span>, <span class="atom">10</span>), <span class="variable">point</span>(<span class="atom">4</span>, -<span class="atom">2</span>)),
+               <span class="variable">point</span>(<span class="atom">14</span>, <span class="atom">8</span>)));</pre></div><hr/><div class="block"><a name="exercise4"></a><div class="exercisenum">Ex. 7.4</div><div class="exercise"><p>If we are going to find routes through this map, we will again need a
+function to create 'signposts', lists of directions that can be taken
+from a given point. Write a function <code>possibleDirections</code>, which takes
+a point object as argument and returns an array of nearby points. We
+can only move to adjacent points, both straight and diagonally, so
+squares have a maximum of eight neighbours. Take care not to return
+squares that lie outside of the map. For all we know the edge of the
+map might be the edge of the world.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">possibleDirections</span>(<span class="variabledef">from</span>) {
+  <span class="keyword">var</span> <span class="variabledef">mapSize</span> = <span class="atom">20</span>;
+  <span class="keyword">function</span> <span class="variabledef">insideMap</span>(<span class="variabledef">point</span>) {
+    <span class="keyword">return</span> <span class="localvariable">point</span>.<span class="property">x</span> &gt;= <span class="atom">0</span> &amp;&amp; <span class="localvariable">point</span>.<span class="property">x</span> &lt; <span class="localvariable">mapSize</span> &amp;&amp;
+           <span class="localvariable">point</span>.<span class="property">y</span> &gt;= <span class="atom">0</span> &amp;&amp; <span class="localvariable">point</span>.<span class="property">y</span> &lt; <span class="localvariable">mapSize</span>;
+  }
+
+  <span class="keyword">var</span> <span class="variabledef">directions</span> = [<span class="variable">point</span>(-<span class="atom">1</span>, <span class="atom">0</span>), <span class="variable">point</span>(<span class="atom">1</span>, <span class="atom">0</span>), <span class="variable">point</span>(<span class="atom">0</span>, -<span class="atom">1</span>),
+                    <span class="variable">point</span>(<span class="atom">0</span>, <span class="atom">1</span>), <span class="variable">point</span>(-<span class="atom">1</span>, -<span class="atom">1</span>), <span class="variable">point</span>(-<span class="atom">1</span>, <span class="atom">1</span>),
+                    <span class="variable">point</span>(<span class="atom">1</span>, <span class="atom">1</span>), <span class="variable">point</span>(<span class="atom">1</span>, -<span class="atom">1</span>)];
+  <span class="keyword">return</span> <span class="variable">filter</span>(<span class="localvariable">insideMap</span>, <span class="variable">map</span>(<span class="variable">partial</span>(<span class="variable">addPoints</span>, <span class="localvariable">from</span>),
+                               <span class="localvariable">directions</span>));
+}
+
+<span class="variable">show</span>(<span class="variable">possibleDirections</span>(<span class="variable">point</span>(<span class="atom">0</span>, <span class="atom">0</span>)));</pre><p>I created a variable <code>mapSize</code>, for the sole purpose of not having to
+write <code>20</code> two times. If, at some other time, we want to use this same
+function for another map, it would be clumsy if the code was full of
+<code>20</code>s, which all have to be changed. We could even go as far as making
+the <code>mapSize</code> an argument to <code>possibleDirections</code>, so we can use the
+function for different maps without changing it. I judged that that
+was not necessary in this case though, such things can always be
+changed when the need arises.</p><p>Then why didn't I also add a variable to hold the <code>0</code>, which also
+occurs two times? I assumed that maps always start at <code>0</code>, so this one
+is unlikely to ever change, and using a variable for it only adds
+noise.</p></div></div><hr/><div class="block"><p>To find a route on this map without having our browser cut off the
+program because it takes too long to finish, we have to stop our
+amateurish attempts and implement a serious algorithm. A lot of work
+has gone into problems like this in the past, and many solutions have
+been designed (some brilliant, others useless). A very popular and
+efficient one is called <a name="key12"></a>A* (pronounced A-star). We will spend the
+rest of the chapter implementing an A* route-finding function for our
+map.</p><p>Before I get to the algorithm itself, let me tell you a bit more about
+the problem it solves. The trouble with searching routes through
+graphs is that, in big graphs, there are an awful lot of them. Our
+Hiva Oa path-finder showed that, when the graph is small, all we needed
+to do was to make sure our paths didn't revisit points they had
+already passed. On our new map, this is not enough anymore.</p><p>The fundamental problem is that there is too much room for going in
+the wrong direction. Unless we somehow manage to steer our exploration
+of paths towards the goal, a choice we make for continuing a given
+path is more likely to go in the wrong direction than in the right
+direction. If you keep generating paths like that, you end up with an
+enormous amount of paths, and even if one of them accidentally reaches
+the end point, you do not know whether that is the shortest path.</p><p>So what you want to do is explore directions that are likely to get
+you to the end point first. On a grid like our map, you can get a
+rough estimate of how good a path is by checking how long it is and
+how close its end is to the end point. By adding path length and an
+estimate of the distance it still has to go, you can get a rough idea
+of which paths are promising. If you extend promising paths first, you
+are less likely to waste time on useless ones.</p></div><hr/><div class="block"><p>But that still is not enough. If our map was of a perfectly flat
+plane, the path that looked promising would almost always be the best
+one, and we could use the above method to walk right to our goal. But
+we have valleys and hillsides blocking our paths, so it is hard to
+tell in advance which direction will be the most efficient path.
+Because of this, we still end up having to explore way too many paths.</p><p>To correct this, we can make clever use of the fact that we are
+constantly exploring the most promising path first. Once we have
+determined that path A is the best way to get to point X, we can
+remember that. When, later on, path B also gets to point X, we know
+that it is not the best route, so we do not have to explore it
+further. This can prevent our program from building a lot of pointless
+paths.</p></div><hr/><div class="block"><p>The algorithm, then, goes something like this...</p><p>There are two pieces of data to keep track of. The first one is called
+the open list, it contains the partial routes that must still be
+explored. Each route has a score, which is calculated by adding its
+length to its estimated distance from the goal. This estimate must
+always be optimistic, it should never overestimate the distance. The
+second is a set of nodes that we have seen, together with the shortest
+partial route that got us there. This one we will call the reached
+list. We start by adding a route that contains only the starting node
+to the open list, and recording it in the reached list.</p><p>Then, as long as there are any nodes in the open list, we take out the
+one that has the lowest (best) score, and find the ways in which it
+can be continued (by calling <code>possibleDirections</code>). For each of the
+nodes this returns, we create a new route by appending it to our
+original route, and adjusting the length of the route using
+<code>weightedDistance</code>. The endpoint of each of these new routes is then
+looked up in the reached list.</p><p>If the node is not in the reached list yet, it means we have not seen
+it before, and we add the new route to the open list and record it in
+the reached list. If we <em>had</em> seen it before, we compare the score of
+the new route to the score of the route in the reached list. If the
+new route is shorter, we replace the existing route with the new one.
+Otherwise, we discard the new route, since we have already seen a
+better way to get to that point.</p><p>We continue doing this until the route we fetch from the open list
+ends at the goal node, in which case we have found our route, or until
+the open list is empty, in which case we have found out that there is
+no route. In our case the map contains no unsurmountable obstacles, so
+there is always a route.</p><p>How do we know that the first full route that we get from the open
+list is also the shortest one? This is a result of the fact that we
+only look at a route when it has the lowest score. The score of a
+route is its actual length plus an <em>optimistic</em> estimate of the
+remaining length. This means that if a route has the lowest score in
+the open list, it is always the best route to its current endpoint ―
+it is impossible for another route to later find a better way to that
+point, because if it were better, its score would have been lower.</p></div><hr/><div class="block"><p>Try not to get frustrated when the fine points of why this works are
+still eluding you. When thinking about algorithms like this, having
+seen 'something like it' before helps a lot, it gives you a point of
+reference to compare the approach to. Beginning programmers have to do
+without such a point of reference, which makes it rather easy to get
+lost. Just realise that this is advanced stuff, globally read over the
+rest of the chapter, and come back to it later when you feel like a
+challenge.</p></div><hr/><div class="block"><p>I am afraid that, for one aspect of the algorithm, I'm going to have
+to invoke magic again. The open list needs to be able to hold a large
+amount of routes, and to quickly find the route with the lowest score
+among them. Storing them in a normal array, and searching through this
+array every time, is way too slow, so I give you a data structure
+called a <a name="key13"></a>binary heap. You create them with <code>new</code>, just like <code>Date</code>
+objects, giving them a function that is used to 'score' its elements
+as argument. The resulting object has the methods <code>push</code> and <code>pop</code>,
+just like an array, but <code>pop</code> always gives you the element with the
+lowest score, instead of the one that was <code>push</code>ed last.</p><pre class="code"><span class="keyword">function</span> <span class="variable">identity</span>(<span class="variabledef">x</span>) {
+  <span class="keyword">return</span> <span class="localvariable">x</span>;
+}
+
+<span class="keyword">var</span> <span class="variable">heap</span> = <span class="keyword">new</span> <span class="variable">BinaryHeap</span>(<span class="variable">identity</span>);
+<span class="variable">forEach</span>([<span class="atom">2</span>, <span class="atom">4</span>, <span class="atom">5</span>, <span class="atom">1</span>, <span class="atom">6</span>, <span class="atom">3</span>], <span class="keyword">function</span>(<span class="variabledef">number</span>) {
+  <span class="variable">heap</span>.<span class="property">push</span>(<span class="localvariable">number</span>);
+});
+<span class="keyword">while</span> (<span class="variable">heap</span>.<span class="property">size</span>() &gt; <span class="atom">0</span>)
+  <span class="variable">show</span>(<span class="variable">heap</span>.<span class="property">pop</span>());</pre><p><a href="appendix2.html">Appendix 2</a> discusses the implementation of this data structure,
+which is quite interesting. After you have read <a href="chapter8.html">chapter 8</a>, you might want
+to take a look at it.</p></div><hr/><div class="block"><p>The need to squeeze out as much efficiency as we can has another
+effect. The Hiva Oa algorithm used arrays of locations to store
+routes, and copied them with the <code>concat</code> method when it extended
+them. This time, we can not afford to copy arrays, since we will be
+exploring lots and lots of routes. Instead, we use a 'chain' of
+objects to store a route. Every object in the chain has some
+properties, such as a point on the map, and the length of the route so
+far, and it also has a property that points at the previous object in
+the chain. Something like this:</p><div class="illustration"><img src="img/objectchain.png"/></div><p>Where the cyan circles are the relevant objects, and the lines
+represent properties ― the end with the dot points at the value of
+the property. Object <code>A</code> is the start of a route here. Object <code>B</code> is
+used to build a new route, which continues from <code>A</code>. It has a
+property, which we will call <code>from</code>, pointing at the route it is based
+on. When we need to reconstruct a route later, we can follow these
+properties to find all the points that the route passed. Note that
+object <code>B</code> is part of two routes, one that ends in <code>D</code> and one that
+ends in <code>E</code>. When there are a lot of routes, this can save us much
+storage space ― every new route only needs one new object for itself,
+the rest is shared with other routes that started the same way.</p></div><hr/><div class="block"><a name="exercise5"></a><div class="exercisenum">Ex. 7.5</div><div class="exercise"><p>Write a function <code>estimatedDistance</code> that gives an optimistic estimate
+of the distance between two points. It does not have to look at the
+height data, but can assume a flat map. Remember that we are only
+travelling straight and diagonally, and that we are counting the
+diagonal distance between two squares as <code>141</code>.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">estimatedDistance</span>(<span class="variabledef">pointA</span>, <span class="variabledef">pointB</span>) {
+  <span class="keyword">var</span> <span class="variabledef">dx</span> = <span class="variable">Math</span>.<span class="property">abs</span>(<span class="localvariable">pointA</span>.<span class="property">x</span> - <span class="localvariable">pointB</span>.<span class="property">x</span>),
+      <span class="variabledef">dy</span> = <span class="variable">Math</span>.<span class="property">abs</span>(<span class="localvariable">pointA</span>.<span class="property">y</span> - <span class="localvariable">pointB</span>.<span class="property">y</span>);
+  <span class="keyword">if</span> (<span class="localvariable">dx</span> &gt; <span class="localvariable">dy</span>)
+    <span class="keyword">return</span> (<span class="localvariable">dx</span> - <span class="localvariable">dy</span>) * <span class="atom">100</span> + <span class="localvariable">dy</span> * <span class="atom">141</span>;
+  <span class="keyword">else</span>
+    <span class="keyword">return</span> (<span class="localvariable">dy</span> - <span class="localvariable">dx</span>) * <span class="atom">100</span> + <span class="localvariable">dx</span> * <span class="atom">141</span>;
+}</pre><p>The strange formulae are used to decompose the path into a straight
+and a diagonal part. If you have a path like this...</p><div class="illustration"><img src="img/diagonalpath.png"/></div><p>... the path is <code>8</code> squares wide and <code>4</code> high, so you get <code>8 - 4 = 4</code>
+straight moves, and <code>4</code> diagonal ones.</p><p>If you wrote a function that just computes the straight 'Pythagorean'
+distance between the points, that would also work. What we need is an
+optimistic estimate, and assuming you can go straight to the goal is
+certainly optimistic. However, the closer the estimate is to the real
+distance, the less useless paths our program has to try out.</p></div></div><hr/><div class="block"><a name="exercise6"></a><div class="exercisenum">Ex. 7.6</div><div class="exercise"><p>We will use a binary heap for the open list. What would be a good data
+structure for the reached list? This one will be used to look up
+routes, given a pair of <code>x</code>, <code>y</code> coordinates. Preferably in a way that
+is fast. Write three functions, <code>makeReachedList</code>, <code>storeReached</code>, and
+<code>findReached</code>. The first one creates your data structure, the second
+one, given a reached list, a point, and a route, stores a route in it,
+and the last one, given a reached list and point, retrieves a route or
+returns <code>undefined</code> to indicate that no route was found for that
+point.</p></div><div class="solution"><p>One reasonable idea would be to use an object with objects in it. One
+of the coordinates in the points, say <code>x</code>, is used as a property name
+for the outer object, and the other, <code>y</code>, for the inner object. This
+does require some bookkeeping to handle the fact that, sometimes, the
+inner object we are looking for is not there (yet).</p><pre class="code"><span class="keyword">function</span> <span class="variable">makeReachedList</span>() {
+  <span class="keyword">return</span> {};
+}
+
+<span class="keyword">function</span> <span class="variable">storeReached</span>(<span class="variabledef">list</span>, <span class="variabledef">point</span>, <span class="variabledef">route</span>) {
+  <span class="keyword">var</span> <span class="variabledef">inner</span> = <span class="localvariable">list</span>[<span class="localvariable">point</span>.<span class="property">x</span>];
+  <span class="keyword">if</span> (<span class="localvariable">inner</span> == <span class="atom">undefined</span>) {
+    <span class="localvariable">inner</span> = {};
+    <span class="localvariable">list</span>[<span class="localvariable">point</span>.<span class="property">x</span>] = <span class="localvariable">inner</span>;
+  }
+  <span class="localvariable">inner</span>[<span class="localvariable">point</span>.<span class="property">y</span>] = <span class="localvariable">route</span>;
+}
+
+<span class="keyword">function</span> <span class="variable">findReached</span>(<span class="variabledef">list</span>, <span class="variabledef">point</span>) {
+  <span class="keyword">var</span> <span class="variabledef">inner</span> = <span class="localvariable">list</span>[<span class="localvariable">point</span>.<span class="property">x</span>];
+  <span class="keyword">if</span> (<span class="localvariable">inner</span> == <span class="atom">undefined</span>)
+    <span class="keyword">return</span> <span class="atom">undefined</span>;
+  <span class="keyword">else</span>
+    <span class="keyword">return</span> <span class="localvariable">inner</span>[<span class="localvariable">point</span>.<span class="property">y</span>];
+}</pre><p>Another possibility is to merge the <code>x</code> and <code>y</code> of the point into a
+single property name, and use that to store routes in a single object.</p><pre class="code"><span class="keyword">function</span> <span class="variable">pointID</span>(<span class="variabledef">point</span>) {
+  <span class="keyword">return</span> <span class="localvariable">point</span>.<span class="property">x</span> + <span class="string">&quot;-&quot;</span> + <span class="localvariable">point</span>.<span class="property">y</span>;
+}
+
+<span class="keyword">function</span> <span class="variable">makeReachedList</span>() {
+  <span class="keyword">return</span> {};
+}
+
+<span class="keyword">function</span> <span class="variable">storeReached</span>(<span class="variabledef">list</span>, <span class="variabledef">point</span>, <span class="variabledef">route</span>) {
+  <span class="localvariable">list</span>[<span class="variable">pointID</span>(<span class="localvariable">point</span>)] = <span class="localvariable">route</span>;
+}
+
+<span class="keyword">function</span> <span class="variable">findReached</span>(<span class="variabledef">list</span>, <span class="variabledef">point</span>) {
+  <span class="keyword">return</span> <span class="localvariable">list</span>[<span class="variable">pointID</span>(<span class="localvariable">point</span>)];
+}</pre></div></div><hr/><div class="block"><p><a name="key14"></a>Defining a type of data structure by providing a set
+of functions to create and manipulate such structures is a useful
+technique. It makes it possible to 'isolate' the code that makes use
+of the structure from the details of the structure itself. Note that,
+no matter which of the above two implementations is used, code that
+needs a reached list works in exactly the same way. It doesn't care
+what kind of objects are used, as long as it gets the results it
+expected.</p><p>This will be discussed in much more detail in <a href="chapter8.html">chapter 8</a>, where we will
+learn to make object types like <code>BinaryHeap</code>, which are created using
+<code>new</code> and have methods to manipulate them.</p></div><hr/><div class="block"><p>Here we finally have the actual path-finding function:</p><pre class="code"><span class="keyword">function</span> <span class="variable">findRoute</span>(<span class="variabledef">from</span>, <span class="variabledef">to</span>) {
+  <span class="keyword">var</span> <span class="variabledef">open</span> = <span class="keyword">new</span> <span class="variable">BinaryHeap</span>(<span class="variable">routeScore</span>);
+  <span class="keyword">var</span> <span class="variabledef">reached</span> = <span class="variable">makeReachedList</span>();
+
+  <span class="keyword">function</span> <span class="variabledef">routeScore</span>(<span class="variabledef">route</span>) {
+    <span class="keyword">if</span> (<span class="localvariable">route</span>.<span class="property">score</span> == <span class="atom">undefined</span>)
+      <span class="localvariable">route</span>.<span class="property">score</span> = <span class="variable">estimatedDistance</span>(<span class="localvariable">route</span>.<span class="property">point</span>, <span class="localvariable">to</span>) +
+                    <span class="localvariable">route</span>.<span class="property">length</span>;
+    <span class="keyword">return</span> <span class="localvariable">route</span>.<span class="property">score</span>;
+  }
+  <span class="keyword">function</span> <span class="variabledef">addOpenRoute</span>(<span class="variabledef">route</span>) {
+    <span class="localvariable">open</span>.<span class="property">push</span>(<span class="localvariable">route</span>);
+    <span class="variable">storeReached</span>(<span class="localvariable">reached</span>, <span class="localvariable">route</span>.<span class="property">point</span>, <span class="localvariable">route</span>);
+  }
+  <span class="localvariable">addOpenRoute</span>({<span class="property">point</span>: <span class="localvariable">from</span>, <span class="property">length</span>: <span class="atom">0</span>});
+
+  <span class="keyword">while</span> (<span class="localvariable">open</span>.<span class="property">size</span>() &gt; <span class="atom">0</span>) {
+    <span class="keyword">var</span> <span class="variabledef">route</span> = <span class="localvariable">open</span>.<span class="property">pop</span>();
+    <span class="keyword">if</span> (<span class="variable">samePoint</span>(<span class="localvariable">route</span>.<span class="property">point</span>, <span class="localvariable">to</span>))
+      <span class="keyword">return</span> <span class="localvariable">route</span>;
+    
+    <span class="variable">forEach</span>(<span class="variable">possibleDirections</span>(<span class="localvariable">route</span>.<span class="property">point</span>), <span class="keyword">function</span>(<span class="variabledef">direction</span>) {
+      <span class="keyword">var</span> <span class="variabledef">known</span> = <span class="variable">findReached</span>(<span class="localvariable">reached</span>, <span class="localvariable">direction</span>);
+      <span class="keyword">var</span> <span class="variabledef">newLength</span> = <span class="localvariable">route</span>.<span class="property">length</span> +
+                      <span class="variable">weightedDistance</span>(<span class="localvariable">route</span>.<span class="property">point</span>, <span class="localvariable">direction</span>);
+      <span class="keyword">if</span> (!<span class="localvariable">known</span> || <span class="localvariable">known</span>.<span class="property">length</span> &gt; <span class="localvariable">newLength</span>){
+        <span class="keyword">if</span> (<span class="localvariable">known</span>)
+          <span class="localvariable">open</span>.<span class="property">remove</span>(<span class="localvariable">known</span>);        
+        <span class="localvariable">addOpenRoute</span>({<span class="property">point</span>: <span class="localvariable">direction</span>,
+                      <span class="property">from</span>: <span class="localvariable">route</span>,
+                      <span class="property">length</span>: <span class="localvariable">newLength</span>});
+      }
+    });
+  }
+  <span class="keyword">return</span> <span class="atom">null</span>;
+}</pre><p>First, it creates the data structures it needs, one open list and one
+reached list. <code>routeScore</code> is the scoring function given to the binary
+heap. Note how it stores its result in the route object, to prevent
+having to re-calculate it multiple times.</p><p><code>addOpenRoute</code> is a convenience function that adds a new route to both
+the open list and the reached list. It is immediately used to add the
+start of the route. Note that route objects always have the properties
+<code>point</code>, which holds the point at the end of the route, and <code>length</code>,
+which holds the current length of the route. Routes which are more
+than one square long also have a <code>from</code> property, which points at
+their predecessors.</p><p>The <code>while</code> loop, as was described in the algorithm, keeps taking the
+lowest-scoring route from the open list and checks whether this gets
+us to the goal point. If it does not, we must continue by expanding
+it. This is what the <code>forEach</code> takes care of. It looks up this new
+point in the reached list. If it is not found there, or the node found
+has a longer length than the new route, a new route object is created
+and added to the open list and reached list, and the existing route
+(if any) is removed from the open list.</p><p>What if the route in <code>known</code> is not on the open list? It has to be,
+because routes are only removed from the open list when they have been
+found to be the most optimal route to their endpoint. If we try to
+remove a value from a binary heap that is not on it, it will throw an
+exception, so if my reasoning is wrong, we will probably see an
+exception when running the function.</p><p>When code gets complex enough to make you doubt certain things about
+it, it is a good idea to add some checks that raise exceptions when
+something goes wrong. That way, you know that there are no weird
+things happening 'silently', and when you break something, you
+immediately see what you broke.</p></div><hr/><div class="block"><p>Note that this algorithm does not use recursion, but still manages to
+explore all those branches. The open list more or less takes over the
+role that the function call stack played in the recursive solution to
+the Hiva Oa problem ― it keeps track of the paths that still have to
+be explored. Every recursive algorithm can be rewritten in a
+non-recursive way by using a data structure to store the 'things that
+must still be done'.</p></div><hr/><div class="block"><p>Well, let us try our path-finder:</p><pre class="code"><span class="keyword">var</span> <span class="variable">route</span> = <span class="variable">findRoute</span>(<span class="variable">point</span>(<span class="atom">0</span>, <span class="atom">0</span>), <span class="variable">point</span>(<span class="atom">19</span>, <span class="atom">19</span>));</pre><p>If you ran all the code above, and did not introduce any errors, that
+call, though it might take a few seconds to run, should give us a
+route object. This object is rather hard to read. That can be helped
+by using the <code>showRoute</code> function which, if your console is big
+enough, will show a route on a map.</p><pre class="code"><span class="variable">showRoute</span>(<span class="variable">route</span>);</pre><p>You can also pass multiple routes to <code>showRoute</code>, which can be useful
+when you are, for example, trying to plan a scenic route, which must
+include the beautiful viewpoint at <code>11</code>, <code>17</code>.</p><pre class="code"><span class="variable">showRoute</span>(<span class="variable">findRoute</span>(<span class="variable">point</span>(<span class="atom">0</span>, <span class="atom">0</span>), <span class="variable">point</span>(<span class="atom">11</span>, <span class="atom">17</span>)),
+          <span class="variable">findRoute</span>(<span class="variable">point</span>(<span class="atom">11</span>, <span class="atom">17</span>), <span class="variable">point</span>(<span class="atom">19</span>, <span class="atom">19</span>)));</pre></div><hr/><div class="block"><p>Variations on the theme of <a name="key15"></a>searching an optimal route through a
+graph can be applied to many problems, many of which are not at all
+related to finding a physical path. For example, a program that needs
+to solve a puzzle of fitting a number of blocks into a limited space
+could do this by exploring the various 'paths' it gets by trying to
+put a certain block in a certain place. The paths that ends up with
+insufficient room for the last blocks are dead ends, and the path that
+manages to fit in all blocks is the solution.</p></div><ol class="footnotes"><li><a name="footnote1"></a>Computers are deterministic machines: They always react in the same
+way to the input they receive, so they can not produce truly random
+values. Therefore, we have to make do with series of numbers that look
+random, but are in fact the result of some complicated deterministic
+computation.</li><li><a name="footnote2"></a>No really, it is.</li></ol><div class="navigation"><a href="chapter6.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter8.html">Next chapter &gt;&gt;</a></div><div class="footer">© <a href="mailto:marijnh@gmail.com">Marijn Haverbeke</a> (<a href="http://creativecommons.org/licenses/by/3.0/">license</a>), written March to July 2007, last modified on April 4 2012.</div></div><script type="text/javascript" src="js/mochi.js"> </script><script type="text/javascript" src="js/codemirror.js"> </script><script type="text/javascript" src="js/ejs.js"> </script></body></html>

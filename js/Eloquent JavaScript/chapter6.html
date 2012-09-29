@@ -1,0 +1,793 @@
+<html><head><link rel="stylesheet" type="text/css" href="css/book.css"/><link rel="stylesheet" type="text/css" href="css/highlight.css"/><link rel="stylesheet" type="text/css" href="css/console.css"/><link rel="stylesheet" type="text/css" href="css/codemirror.css"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>Functional Programming -- Eloquent JavaScript</title></head><body><script type="text/javascript" src="js/before.js"> </script><div class="content"><script type="text/javascript">var chapterTag = 'fp';</script><div class="navigation"><a href="chapter5.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter7.html">Next chapter &gt;&gt;</a></div><h1><span class="number">Chapter 6: </span>Functional Programming</h1><div class="block"><p>As programs get bigger, they also become more complex and harder to
+understand. We all think ourselves pretty clever, of course, but we
+are mere human beings, and even a moderate amount of chaos tends to
+baffle us. And then it all goes downhill. Working on something you do
+not really understand is a bit like cutting random wires on those
+time-activated bombs they always have in movies. If you are lucky, you
+might get the right one ― especially if you are the hero of the movie
+and strike a suitably dramatic pose ― but there is always the
+possibility of blowing everything up.</p><p>Admittedly, in most cases, breaking a program does not cause any large
+explosions. But when a program, by someone's ignorant tinkering, has
+degenerated into a ramshackle mass of errors, reshaping it into
+something sensible is a terrible labour ― sometimes you might just as
+well start over.</p><p><a name="key1"></a>Thus, the programmer is always looking for ways to keep
+the complexity of his programs as low as possible. An important way to
+do this is to try and make code more abstract. When writing a program,
+it is easy to get sidetracked into small details at every point. You
+come across some little issue, and you deal with it, and then proceed
+to the next little problem, and so on. This makes the code read like a
+grandmother's tale.</p><blockquote>Yes, dear, to make pea soup you will need split peas, the dry kind.
+And you have to soak them at least for a night, or you will have to
+cook them for hours and hours. I remember one time, when my dull son
+tried to make pea soup. Would you believe he hadn't soaked the peas?
+We almost broke our teeth, all of us. Anyway, when you have soaked
+the peas, and you'll want about a cup of them per person, and pay
+attention because they will expand a bit while they are soaking, so
+if you aren't careful they will spill out of whatever you use to
+hold them, so also use plenty water to soak in, but as I said, about
+a cup of them, when they are dry, and after they are soaked you cook
+them in four cups of water per cup of dry peas. Let it simmer for
+two hours, which means you cover it and keep it barely cooking, and
+then add some diced onions, sliced celery stalk, and maybe a carrot
+or two and some ham. Let it all cook for a few minutes more, and it
+is ready to eat.</blockquote><p>Another way to describe this recipe:</p><blockquote>Per person: one cup dried split peas, half a chopped onion, half a
+carrot, a celery stalk, and optionally ham.<br/><br/>Soak peas overnight, simmer them for two hours in four cups of water
+(per person), add vegetables and ham, and cook for ten more minutes.</blockquote><p>This is shorter, but if you don't know how to soak peas you'll surely
+screw up and put them in too little water. But how to soak peas can be
+looked up, and that is the trick. If you assume a certain basic
+knowledge in the audience, you can talk in a language that deals with
+bigger concepts, and express things in a much shorter and clearer way.
+This, more or less, is what abstraction is.</p><p>How is this far-fetched recipe story relevant to programming? Well,
+obviously, the recipe is the program. Furthermore, the basic knowledge
+that the cook is supposed to have corresponds to the functions and
+other constructs that are available to the programmer. If you remember
+the introduction of this book, things like <code>while</code> make it easier to
+build loops, and in <a href="chapter4.html">chapter 4</a> we wrote some simple functions in order to
+make other functions shorter and more straightforward. Such tools,
+some of them made available by the language itself, others built by
+the programmer, are used to reduce the amount of uninteresting details
+in the rest of the program, and thus make that program easier to work
+with.</p></div><hr/><div class="block"><p><a name="key2"></a>Functional programming, which is the subject
+of this chapter, produces abstraction through clever ways of combining
+functions. A programmer armed with a repertoire of fundamental
+functions and, more importantly, the knowledge on how to use them, is
+much more effective than one who starts from scratch. Unfortunately, a
+standard JavaScript environment comes with deplorably few essential
+functions, so we have to write them ourselves or, which is often
+preferable, make use of somebody else's code (more on that in
+<a href="chapter9.html">chapter 9</a>).</p><p>There are other popular approaches to abstraction, most notably
+object-oriented programming, the subject of <a href="chapter8.html">chapter 8</a>.</p></div><hr/><div class="block"><p>One ugly detail that, if you have any good taste at all, must be
+starting to bother you is the endlessly repeated <code>for</code> loop going over
+an array: <code>for (var i = 0; i &lt; something.length; i++) ...</code>. Can this
+be abstracted?</p><p>The problem is that, whereas most functions just take some values,
+combine them, and return something, such a loop contains a piece of
+code that it must execute. It is easy to write a function that goes
+over an array and prints out every element:</p><pre class="code"><span class="keyword">function</span> <span class="variable">printArray</span>(<span class="variabledef">array</span>) {
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">0</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">array</span>.<span class="property">length</span>; <span class="localvariable">i</span>++)
+    <span class="variable">print</span>(<span class="localvariable">array</span>[<span class="localvariable">i</span>]);
+}</pre><p>But what if we want to do something else than print? Since 'doing
+something' can be represented as a function, and functions are also
+values, we can pass our action as a function value:</p><pre class="code"><span class="keyword">function</span> <span class="variable">forEach</span>(<span class="variabledef">array</span>, <span class="variabledef">action</span>) {
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = <span class="atom">0</span>; <span class="localvariable">i</span> &lt; <span class="localvariable">array</span>.<span class="property">length</span>; <span class="localvariable">i</span>++)
+    <span class="localvariable">action</span>(<span class="localvariable">array</span>[<span class="localvariable">i</span>]);
+}
+
+<span class="variable">forEach</span>([<span class="string">&quot;Wampeter&quot;</span>, <span class="string">&quot;Foma&quot;</span>, <span class="string">&quot;Granfalloon&quot;</span>], <span class="variable">print</span>);</pre><p>And by making use of an anonymous function, something just like a
+<code>for</code> loop can be written with less useless details:</p><pre class="code"><span class="keyword">function</span> <span class="variable">sum</span>(<span class="variabledef">numbers</span>) {
+  <span class="keyword">var</span> <span class="variabledef">total</span> = <span class="atom">0</span>;
+  <span class="variable">forEach</span>(<span class="localvariable">numbers</span>, <span class="keyword">function</span> (<span class="variabledef">number</span>) {
+    <span class="localvariable">total</span> += <span class="localvariable">number</span>;
+  });
+  <span class="keyword">return</span> <span class="localvariable">total</span>;
+}
+<span class="variable">show</span>(<span class="variable">sum</span>([<span class="atom">1</span>, <span class="atom">10</span>, <span class="atom">100</span>]));</pre><p>Note that the variable <code>total</code> is visible inside the anonymous
+function because of the lexical scoping rules. Also note that this
+version is hardly shorter than the <code>for</code> loop and requires a rather
+clunky <code>});</code> at its end ― the brace closes the body of the anonymous
+function, the parenthesis closes the function call to <a name="key3"></a><code>forEach</code>, and
+the semicolon is needed because this call is a statement.</p><p>You do get a variable bound to the current element in the array,
+<code>number</code>, so there is no need to use <code>numbers[i]</code> anymore, and when
+this array is created by evaluating some expression, there is no need
+to store it in a variable, because it can be passed to <code>forEach</code>
+directly.</p><p>The cat-code in <a href="chapter4.html">chapter 4</a> contains a piece like this:</p><pre class="code invalid"><span class="keyword">var</span> <span class="variable">paragraphs</span> = <span class="variable">mailArchive</span>[<span class="variable">mail</span>].<span class="property">split</span>(<span class="string">&quot;\n&quot;</span>);
+<span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">i</span> = <span class="atom">0</span>; <span class="variable">i</span> &lt; <span class="variable">paragraphs</span>.<span class="property">length</span>; <span class="variable">i</span>++)
+  <span class="variable">handleParagraph</span>(<span class="variable">paragraphs</span>[<span class="variable">i</span>]);</pre><p>This can now be written as...</p><pre class="code invalid"><span class="variable">forEach</span>(<span class="variable">mailArchive</span>[<span class="variable">mail</span>].<span class="property">split</span>(<span class="string">&quot;\n&quot;</span>), <span class="variable">handleParagraph</span>);</pre><p>On the whole, using more abstract (or 'higher level') constructs
+results in more information and less noise: The code in <code>sum</code> reads
+'<em>for each number in numbers add that number to the total</em>', instead
+of... '<em>there is this variable that starts at zero, and it counts
+upward to the length of the array called numbers, and for every value
+of this variable we look up the corresponding element in the array and
+add this to the total</em>'.</p></div><hr/><div class="block"><p>What <code>forEach</code> does is take an algorithm, in this case 'going over an
+array', and abstract it. The 'gaps' in the algorithm, in this case,
+what to do for each of these elements, are filled by functions which
+are passed to the algorithm function.</p><p>Functions that operate on other functions are called <a name="key4"></a>higher-order
+functions. By operating on functions, they can talk about actions on
+a whole new level. The <code>makeAddFunction</code> function from <a href="chapter3.html">chapter 3</a> is
+also a higher-order function. Instead of taking a function value as an
+argument, it produces a new function.</p><p>Higher-order functions can be used to generalise many algorithms that
+regular functions can not easily describe. When you have a repertoire
+of these functions at your disposal, it can help you think about your
+code in a clearer way: Instead of a messy set of variables and loops,
+you can decompose algorithms into a combination of a few fundamental
+algorithms, which are invoked by name, and do not have to be typed out
+again and again.</p><p>Being able to write <em>what</em> we want to do instead of <em>how</em> we do it
+means we are working at a higher level of abstraction. In practice,
+this means shorter, clearer, and more pleasant code.</p></div><hr/><div class="block"><p>Another useful type of higher-order function <em>modifies</em> the function
+value it is given:</p><pre class="code"><span class="keyword">function</span> <span class="variable">negate</span>(<span class="variabledef">func</span>) {
+  <span class="keyword">return</span> <span class="keyword">function</span>(<span class="variabledef">x</span>) {
+    <span class="keyword">return</span> !<span class="localvariable">func</span>(<span class="localvariable">x</span>);
+  };
+}
+<span class="keyword">var</span> <span class="variable">isNotNaN</span> = <span class="variable">negate</span>(<span class="variable">isNaN</span>);
+<span class="variable">show</span>(<span class="variable">isNotNaN</span>(<span class="atom">NaN</span>));</pre><p>The function returned by <code>negate</code> feeds the argument it is given to
+the original function <code>func</code>, and then negates the result. But what if
+the function you want to negate takes more than one argument? You can
+get access to any arguments passed to a function with the <code>arguments</code>
+array, but how do you call a function when you do not know how many
+arguments you have?</p><p>Functions have a method called <a name="key5"></a><code>apply</code>, which is used for situations
+like this. It takes two arguments. The role of the first argument will
+be discussed in <a href="chapter8.html">chapter 8</a>, for now we just use <code>null</code> there. The second
+argument is an array containing the arguments that the function must
+be applied to.</p><pre class="code"><span class="variable">show</span>(<span class="variable">Math</span>.<span class="property">min</span>.<span class="property">apply</span>(<span class="atom">null</span>, [<span class="atom">5</span>, <span class="atom">6</span>]));
+
+<span class="keyword">function</span> <span class="variable">negate</span>(<span class="variabledef">func</span>) {
+  <span class="keyword">return</span> <span class="keyword">function</span>() {
+    <span class="keyword">return</span> !<span class="localvariable">func</span>.<span class="property">apply</span>(<span class="atom">null</span>, <span class="localvariable">arguments</span>);
+  };
+}</pre><p>Unfortunately, on the Internet Explorer browser a lot of built-in
+functions, such as <code>alert</code>, are not <em>really</em> functions... or
+something. They report their type as <code>&quot;object&quot;</code> when given to the
+<code>typeof</code> operator, and they do not have an <code>apply</code> method. Your own
+functions do not suffer from this, they are always real functions.</p></div><hr/><div class="block"><p>Let us look at a few more basic algorithms related to arrays. The
+<code>sum</code> function is really a variant of an algorithm which is usually
+called <a name="key6"></a><code>reduce</code> or <code>fold</code>:</p><pre class="code"><span class="keyword">function</span> <span class="variable">reduce</span>(<span class="variabledef">combine</span>, <span class="variabledef">base</span>, <span class="variabledef">array</span>) {
+  <span class="variable">forEach</span>(<span class="localvariable">array</span>, <span class="keyword">function</span> (<span class="variabledef">element</span>) {
+    <span class="localvariable">base</span> = <span class="localvariable">combine</span>(<span class="localvariable">base</span>, <span class="localvariable">element</span>);
+  });
+  <span class="keyword">return</span> <span class="localvariable">base</span>;
+}
+
+<span class="keyword">function</span> <span class="variable">add</span>(<span class="variabledef">a</span>, <span class="variabledef">b</span>) {
+  <span class="keyword">return</span> <span class="localvariable">a</span> + <span class="localvariable">b</span>;
+}
+
+<span class="keyword">function</span> <span class="variable">sum</span>(<span class="variabledef">numbers</span>) {
+  <span class="keyword">return</span> <span class="variable">reduce</span>(<span class="variable">add</span>, <span class="atom">0</span>, <span class="localvariable">numbers</span>);
+}</pre><p><code>reduce</code> combines an array into a single value by repeatedly using a
+function that combines an element of the array with a base value. This
+is exactly what <code>sum</code> did, so it can be made shorter by using
+<code>reduce</code>... except that addition is an operator and not a function in
+JavaScript, so we first had to put it into a function.</p><p>The reason <code>reduce</code> takes the function as its first argument instead
+of its last, as in <code>forEach</code>, is partly that this is tradition ―
+other languages do it like that ― and partly that this allows us to
+use a particular trick, which will be discussed at the end of this
+chapter. It does mean that, when calling <code>reduce</code>, writing the
+reducing function as an anonymous function looks a bit weirder,
+because now the other arguments follow after the function, and the
+resemblance to a normal <code>for</code> block is lost entirely.</p></div><hr/><div class="block"><a name="exercise1"></a><div class="exercisenum">Ex. 6.1</div><div class="exercise"><p>Write a function <code>countZeroes</code>, which takes an array of numbers as its
+argument and returns the amount of zeroes that occur in it. Use
+<code>reduce</code>.</p><p>Then, write the higher-order function <code>count</code>, which takes an array
+and a test function as arguments, and returns the amount of elements
+in the array for which the test function returned <code>true</code>. Re-implement
+<code>countZeroes</code> using this function.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">countZeroes</span>(<span class="variabledef">array</span>) {
+  <span class="keyword">function</span> <span class="variabledef">counter</span>(<span class="variabledef">total</span>, <span class="variabledef">element</span>) {
+    <span class="keyword">return</span> <span class="localvariable">total</span> + (<span class="localvariable">element</span> === <span class="atom">0</span> ? <span class="atom">1</span> : <span class="atom">0</span>);
+  }
+  <span class="keyword">return</span> <span class="variable">reduce</span>(<span class="localvariable">counter</span>, <span class="atom">0</span>, <span class="localvariable">array</span>);
+}</pre><p><a name="key7"></a>The weird part, with the question mark and the colon, uses a
+new operator. In <a href="chapter2.html">chapter 2</a> we have seen unary and binary operators.
+This one is ternary ― it acts on three values. Its effect resembles
+that of <code>if</code>/<code>else</code>, except that, where <code>if</code> conditionally executes
+statements, this one conditionally chooses expressions. The first
+part, before the question mark, is the condition. If this condition is
+<code>true</code>, the expression after the question mark is chosen, <code>1</code> in this
+case. If it is <code>false</code>, the part after the colon, <code>0</code> in this case, is
+chosen.</p><p>Use of this operator can make some pieces of code much shorter. When
+the expressions inside it get very big, or you have to make more
+decisions inside the conditional parts, just using plain <code>if</code> and
+<code>else</code> is usually more readable.</p><p>Here is the solution that uses a <code>count</code> function, with a function
+that produces equality-testers included to make the final
+<code>countZeroes</code> function even shorter:</p><pre class="code"><span class="keyword">function</span> <span class="variable">count</span>(<span class="variabledef">test</span>, <span class="variabledef">array</span>) {
+  <span class="keyword">return</span> <span class="variable">reduce</span>(<span class="keyword">function</span>(<span class="variabledef">total</span>, <span class="variabledef">element</span>) {
+    <span class="keyword">return</span> <span class="localvariable">total</span> + (<span class="localvariable">test</span>(<span class="localvariable">element</span>) ? <span class="atom">1</span> : <span class="atom">0</span>);
+  }, <span class="atom">0</span>, <span class="localvariable">array</span>);
+}
+
+<span class="keyword">function</span> <span class="variable">equals</span>(<span class="variabledef">x</span>) {
+  <span class="keyword">return</span> <span class="keyword">function</span>(<span class="variabledef">element</span>) {<span class="keyword">return</span> <span class="localvariable">x</span> === <span class="localvariable">element</span>;};
+}
+
+<span class="keyword">function</span> <span class="variable">countZeroes</span>(<span class="variabledef">array</span>) {
+  <span class="keyword">return</span> <span class="variable">count</span>(<span class="variable">equals</span>(<span class="atom">0</span>), <span class="localvariable">array</span>);
+}</pre></div></div><hr/><div class="block"><p>One other generally useful 'fundamental algorithm' related to arrays
+is called <a name="key8"></a><code>map</code>. It goes over an array, applying a function to every
+element, just like <code>forEach</code>. But instead of discarding the values
+returned by function, it builds up a new array from these values.</p><pre class="code"><span class="keyword">function</span> <span class="variable">map</span>(<span class="variabledef">func</span>, <span class="variabledef">array</span>) {
+  <span class="keyword">var</span> <span class="variabledef">result</span> = [];
+  <span class="variable">forEach</span>(<span class="localvariable">array</span>, <span class="keyword">function</span> (<span class="variabledef">element</span>) {
+    <span class="localvariable">result</span>.<span class="property">push</span>(<span class="localvariable">func</span>(<span class="localvariable">element</span>));
+  });
+  <span class="keyword">return</span> <span class="localvariable">result</span>;
+}
+
+<span class="variable">show</span>(<span class="variable">map</span>(<span class="variable">Math</span>.<span class="property">round</span>, [<span class="atom">0.01</span>, <span class="atom">2</span>, <span class="atom">9.89</span>, <span class="variable">Math</span>.<span class="property">PI</span>]));</pre><p>Note that the first argument is called <code>func</code>, not <code>function</code>, this
+is because <code>function</code> is a keyword and thus not a valid variable name.</p></div><hr/><div class="block"><p>There once was, living in the deep mountain forests of Transylvania, a
+recluse. Most of the time, he just wandered around his mountain,
+talking to trees and laughing with birds. But now and then, when the
+pouring rain trapped him in his little hut, and the howling wind made
+him feel unbearably small, the recluse felt an urge to write
+something, wanted to pour some thoughts out onto paper, where they
+could maybe grow bigger than he himself was.</p><p>After failing miserably at poetry, fiction, and philosophy, the
+recluse finally decided to write a technical book. In his youth, he
+had done some computer programming, and he figured that if he could
+just write a good book about that, fame and recognition would surely
+follow.</p><p>So he wrote. At first he used fragments of tree bark, but that turned
+out not to be very practical. He went down to the nearest village and
+bought himself a laptop computer. After a few chapters, he realised he
+wanted to put the book in HTML format, in order to put it on his
+web-page...</p></div><hr/><div class="block"><p>Are you familiar with HTML? It is the method used to add mark-up to
+pages on the web, and we will be using it a few times in this book, so
+it would be nice if you know how it works, at least generally. If you
+are a good student, you could go search the web for a good
+introduction to HTML now, and come back here when you have read it.
+Most of you probably are lousy students, so I will just give a short
+explanation and hope it is enough.</p><p><a name="key9"></a>HTML stands for 'HyperText Mark-up Language'. An HTML document is
+all text. Because it must be able to express the structure of this
+text, information about which text is a heading, which text is purple,
+and so on, a few characters have a special meaning, somewhat like
+backslashes in JavaScript strings. The 'less than' and 'greater than'
+characters are used to create '<a name="key10"></a>tags'. A tag gives extra information
+about the text in the document. It can stand on its own, for example
+to mark the place where a picture should appear in the page, or it can
+contain text and other tags, for example when it marks the start and
+end of a paragraph.</p><p>Some tags are compulsory, a whole HTML document must always be
+contained in between <code>html</code> tags. Here is an example of an HTML
+document:</p><pre class="preformatted">&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;A quote&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;h1&gt;A quote&lt;/h1&gt;
+    &lt;blockquote&gt;
+      &lt;p&gt;The connection between the language in which we
+      think/program and the problems and solutions we can imagine
+      is very close.  For this reason restricting language
+      features with the intent of eliminating programmer errors is
+      at best dangerous.&lt;/p&gt;
+      &lt;p&gt;-- Bjarne Stroustrup&lt;/p&gt;
+    &lt;/blockquote&gt;
+    &lt;p&gt;Mr. Stroustrup is the inventor of the C++ programming
+    language, but quite an insightful person nevertheless.&lt;/p&gt;
+    &lt;p&gt;Also, here is a picture of an ostrich:&lt;/p&gt;
+    &lt;img src=&quot;img/ostrich.png&quot;/&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</pre><p>Elements that contain text or other tags are first opened with
+<code>&lt;tagname&gt;</code>, and afterwards finished with <code>&lt;/tagname&gt;</code>. The <code>html</code>
+element always contains two children: <code>head</code> and <code>body</code>. The first
+contains information <em>about</em> the document, the second contains the
+actual document.</p><p>Most tag names are cryptic abbreviations. <code>h1</code> stands for 'heading 1',
+the biggest kind of heading. There are also <code>h2</code> to <code>h6</code> for
+successively smaller headings. <code>p</code> means 'paragraph', and <code>img</code> stands
+for 'image'. The <code>img</code> element does not contain any text or other
+tags, but it does have some extra information,
+<code>src=&quot;img/ostrich.png&quot;</code>, which is called an '<a name="key11"></a>attribute'. In this
+case, it contains information about the image file that should be
+shown here.</p><p>Because <code>&lt;</code> and <code>&gt;</code> have a special meaning in HTML documents, they can
+not be written directly in the text of the document. If you want to
+say '<code>5 &lt; 10</code>' in an HTML document, you have to write '<code>5 &amp;lt; 10</code>',
+where '<code>lt</code>' stands for 'less than'. '<code>&amp;gt;</code>' is used for '<code>&gt;</code>', and
+because these codes also give the ampersand character a special
+meaning, a plain '<code>&amp;</code>' is written as '<code>&amp;amp;</code>'.</p><p>Now, those are only the bare basics of HTML, but they should be enough
+to make it through this chapter, and later chapters that deal with
+HTML documents, without getting entirely confused.</p></div><hr/><div class="block"><p>The JavaScript console has a function <code>viewHTML</code> that can be used to
+look at HTML documents. I stored the example document above in the
+variable <code>stroustrupQuote</code>, so you can view it by executing the
+following code:</p><pre class="code"><span class="variable">viewHTML</span>(<span class="variable">stroustrupQuote</span>);</pre><p>If you have some kind of pop-up blocker installed or integrated in
+your browser, it will probably interfere with <code>viewHTML</code>, which tries
+to show the HTML document in a new window or tab. Try to configure the
+blocker to allow pop-ups from this site.</p></div><hr/><div class="block"><p>So, picking up the story again, the recluse wanted to have his book in
+HTML format. At first he just wrote all the tags directly into his
+manuscript, but typing all those less-than and greater-than signs made
+his fingers hurt, and he constantly forgot to write <code>&amp;amp;</code> when he
+needed an <code>&amp;</code>. This gave him a headache. Next, he tried to write the
+book in Microsoft Word, and then save it as HTML. But the HTML that
+came out of that was fifteen times bigger and more complicated than it
+had to be. And besides, Microsoft Word gave him a headache.</p><p>The solution that he eventually came up with was this: He would write
+the book as plain text, following some simple rules about the way
+paragraphs were separated and the way headings looked. Then, he would
+write a program to convert this text into precisely the HTML that he
+wanted.</p><p>The rules are this:</p><ol><li>Paragraphs are separated by blank lines.</li><li>A paragraph that starts with a '%' symbol is a header. The more '%' symbols, the smaller the header.</li><li>Inside paragraphs, pieces of text can be emphasised by putting them between asterisks.</li><li>Footnotes are written between braces.</li></ol></div><hr/><div class="block"><p>After he had struggled painfully with his book for six months, the
+recluse had still only finished a few paragraphs. At this point, his
+hut was struck by lightning, killing him, and forever putting his
+writing ambitions to rest. From the charred remains of his laptop, I
+could recover the following file:</p><pre class="preformatted">% The Book of Programming
+
+%% The Two Aspects
+
+Below the surface of the machine, the program moves. Without effort,
+it expands and contracts. In great harmony, electrons scatter and
+regroup. The forms on the monitor are but ripples on the water. The
+essence stays invisibly below.
+
+When the creators built the machine, they put in the processor and the
+memory. From these arise the two aspects of the program.
+
+The aspect of the processor is the active substance. It is called
+Control. The aspect of the memory is the passive substance. It is
+called Data.
+
+Data is made of merely bits, yet it takes complex forms. Control
+consists only of simple instructions, yet it performs difficult
+tasks. From the small and trivial, the large and complex arise.
+
+The program source is Data. Control arises from it. The Control
+proceeds to create new Data. The one is born from the other, the
+other is useless without the one. This is the harmonious cycle of
+Data and Control.
+
+Of themselves, Data and Control are without structure. The programmers
+of old moulded their programs out of this raw substance. Over time,
+the amorphous Data has crystallised into data types, and the chaotic
+Control was restricted into control structures and functions.
+
+%% Short Sayings
+
+When a student asked Fu-Tzu about the nature of the cycle of Data and
+Control, Fu-Tzu replied 'Think of a compiler, compiling itself.'
+
+A student asked 'The programmers of old used only simple machines and
+no programming languages, yet they made beautiful programs. Why do we
+use complicated machines and programming languages?'. Fu-Tzu replied
+'The builders of old used only sticks and clay, yet they made
+beautiful huts.'
+
+A hermit spent ten years writing a program. 'My program can compute
+the motion of the stars on a 286-computer running MS DOS', he proudly
+announced. 'Nobody owns a 286-computer or uses MS DOS anymore.',
+Fu-Tzu responded.
+
+Fu-Tzu had written a small program that was full of global state and
+dubious shortcuts. Reading it, a student asked 'You warned us against
+these techniques, yet I find them in your program. How can this be?'
+Fu-Tzu said 'There is no need to fetch a water hose when the house is
+not on fire.'{This is not to be read as an encouragement of sloppy
+programming, but rather as a warning against neurotic adherence to
+rules of thumb.}
+
+%% Wisdom
+
+A student was complaining about digital numbers. 'When I take the root
+of two and then square it again, the result is already inaccurate!'.
+Overhearing him, Fu-Tzu laughed. 'Here is a sheet of paper. Write down
+the precise value of the square root of two for me.'
+
+Fu-Tzu said 'When you cut against the grain of the wood, much strength
+is needed. When you program against the grain of a problem, much code
+is needed.'
+
+Tzu-li and Tzu-ssu were boasting about the size of their latest
+programs. 'Two-hundred thousand lines', said Tzu-li, 'not counting
+comments!'. 'Psah', said Tzu-ssu, 'mine is almost a *million* lines
+already.' Fu-Tzu said 'My best program has five hundred lines.'
+Hearing this, Tzu-li and Tzu-ssu were enlightened.
+
+A student had been sitting motionless behind his computer for hours,
+frowning darkly. He was trying to write a beautiful solution to a
+difficult problem, but could not find the right approach. Fu-Tzu hit
+him on the back of his head and shouted '*Type something!*' The student
+started writing an ugly solution. After he had finished, he suddenly
+understood the beautiful solution.
+
+%% Progression
+
+A beginning programmer writes his programs like an ant builds her
+hill, one piece at a time, without thought for the bigger structure.
+His programs will be like loose sand. They may stand for a while, but
+growing too big they fall apart{Referring to the danger of internal
+inconsistency and duplicated structure in unorganised code.}.
+
+Realising this problem, the programmer will start to spend a lot of
+time thinking about structure. His programs will be rigidly
+structured, like rock sculptures. They are solid, but when they must
+change, violence must be done to them{Referring to the fact that
+structure tends to put restrictions on the evolution of a program.}.
+
+The master programmer knows when to apply structure and when to leave
+things in their simple form. His programs are like clay, solid yet
+malleable.
+
+%% Language
+
+When a programming language is created, it is given syntax and
+semantics. The syntax describes the form of the program, the semantics
+describe the function. When the syntax is beautiful and the semantics
+are clear, the program will be like a stately tree. When the syntax is
+clumsy and the semantics confusing, the program will be like a bramble
+bush.
+
+Tzu-ssu was asked to write a program in the language called Java,
+which takes a very primitive approach to functions. Every morning, as
+he sat down in front of his computer, he started complaining. All day
+he cursed, blaming the language for all that went wrong. Fu-Tzu
+listened for a while, and then reproached him, saying 'Every language
+has its own way. Follow its form, do not try to program as if you
+were using another language.'</pre></div><hr/><div class="block"><p>To honour the memory of our good recluse, I would like to finish his
+HTML-generating program for him. A good approach to this problem goes
+like this:</p><ol><li>Split the file into paragraphs by cutting it at every empty line.</li><li>Remove the '%' characters from header paragraphs and mark them as headers.</li><li>Process the text of the paragraphs themselves, splitting them into normal parts, emphasised parts, and footnotes.</li><li>Move all the footnotes to the bottom of the document, leaving numbers<a class="footref" href="#footnote1">1</a> in their place.</li><li>Wrap each piece into the correct HTML tags.</li><li>Combine everything into a single HTML document.</li></ol><p>This approach does not allow footnotes inside emphasised text, or vice
+versa. This is kind of arbitrary, but helps keep the example code
+simple. If, at the end of the chapter, you feel like an extra
+challenge, you can try to revise the program to support 'nested'
+mark-up.</p><p>The whole manuscript, as a string value, is available on this page
+by calling <code>recluseFile</code> function.</p></div><hr/><div class="block"><p>Step 1 of the algorithm is trivial. A blank line is what you get when
+you have two newlines in a row, and if you remember the <code>split</code> method
+that strings have, which we saw in <a href="chapter4.html">chapter 4</a>, you will realise that this
+will do the trick:</p><pre class="code"><span class="keyword">var</span> <span class="variable">paragraphs</span> = <span class="variable">recluseFile</span>().<span class="property">split</span>(<span class="string">&quot;\n\n&quot;</span>);
+<span class="variable">print</span>(<span class="string">&quot;Found &quot;</span>, <span class="variable">paragraphs</span>.<span class="property">length</span>, <span class="string">&quot; paragraphs.&quot;</span>);</pre></div><hr/><div class="block"><a name="exercise2"></a><div class="exercisenum">Ex. 6.2</div><div class="exercise"><p>Write a function <code>processParagraph</code> that, when given a paragraph
+string as its argument, checks whether this paragraph is a header. If
+it is, it strips off the '%' characters and counts their number. Then,
+it returns an object with two properties, <code>content</code>, which contains
+the text inside the paragraph, and <code>type</code>, which contains the tag that
+this paragraph must be wrapped in, <code>&quot;p&quot;</code> for regular paragraphs,
+<code>&quot;h1&quot;</code> for headers with one '%', and <code>&quot;hX&quot;</code> for headers with <code>X</code> '%'
+characters.</p><p>Remember that strings have a <code>charAt</code> method that can be used to look
+at a specific character inside them.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">processParagraph</span>(<span class="variabledef">paragraph</span>) {
+  <span class="keyword">var</span> <span class="variabledef">header</span> = <span class="atom">0</span>;
+  <span class="keyword">while</span> (<span class="localvariable">paragraph</span>.<span class="property">charAt</span>(<span class="atom">0</span>) == <span class="string">&quot;%&quot;</span>) {
+    <span class="localvariable">paragraph</span> = <span class="localvariable">paragraph</span>.<span class="property">slice</span>(<span class="atom">1</span>);
+    <span class="localvariable">header</span>++;
+  }
+
+  <span class="keyword">return</span> {<span class="property">type</span>: (<span class="localvariable">header</span> == <span class="atom">0</span> ? <span class="string">&quot;p&quot;</span> : <span class="string">&quot;h&quot;</span> + <span class="localvariable">header</span>),
+          <span class="property">content</span>: <span class="localvariable">paragraph</span>};
+}
+
+<span class="variable">show</span>(<span class="variable">processParagraph</span>(<span class="variable">paragraphs</span>[<span class="atom">0</span>]));</pre></div></div><hr/><div class="block"><p>This is where we can try out the <code>map</code> function we saw earlier.</p><pre class="code"><span class="keyword">var</span> <span class="variable">paragraphs</span> = <span class="variable">map</span>(<span class="variable">processParagraph</span>,
+                     <span class="variable">recluseFile</span>().<span class="property">split</span>(<span class="string">&quot;\n\n&quot;</span>));</pre><p>And <em>bang</em>, we have an array of nicely categorised paragraph objects.
+We are getting ahead of ourselves though, we forgot step 3 of the
+algorithm:</p><blockquote>Process the text of the paragraphs themselves, splitting them into
+normal parts, emphasised parts, and footnotes.</blockquote><p>Which can be decomposed into:</p><ol><li>If the paragraph starts with an asterisk, take off the emphasised part and store it.</li><li>If the paragraph starts with an opening brace, take off the footnote and store it.</li><li>Otherwise, take off the part until the first emphasised part or footnote, or until the end of the string, and store it as normal text.</li><li>If there is anything left in the paragraph, start at 1 again.</li></ol></div><hr/><div class="block"><a name="exercise3"></a><div class="exercisenum">Ex. 6.3</div><div class="exercise"><p>Build a function <code>splitParagraph</code> which, given a paragraph string,
+returns an array of paragraph fragments. Think of a good way to
+represent the fragments.</p><p>The method <code>indexOf</code>, which searches for a character or sub-string in
+a string and returns its position, or <code>-1</code> if not found, will probably
+be useful in some way here.</p><p>This is a tricky algorithm, and there are many not-quite-correct or
+way-too-long ways to describe it. If you run into problems, just think
+about it for a minute. Try to write inner functions that perform the
+smaller actions that make up the algorithm.</p></div><div class="solution"><p>Here is one possible solution:</p><pre class="code"><span class="keyword">function</span> <span class="variable">splitParagraph</span>(<span class="variabledef">text</span>) {
+  <span class="keyword">function</span> <span class="variabledef">indexOrEnd</span>(<span class="variabledef">character</span>) {
+    <span class="keyword">var</span> <span class="variabledef">index</span> = <span class="localvariable">text</span>.<span class="property">indexOf</span>(<span class="localvariable">character</span>);
+    <span class="keyword">return</span> <span class="localvariable">index</span> == -<span class="atom">1</span> ? <span class="localvariable">text</span>.<span class="property">length</span> : <span class="localvariable">index</span>;
+  }
+
+  <span class="keyword">function</span> <span class="variabledef">takeNormal</span>() {
+    <span class="keyword">var</span> <span class="variabledef">end</span> = <span class="variable">reduce</span>(<span class="variable">Math</span>.<span class="property">min</span>, <span class="localvariable">text</span>.<span class="property">length</span>,
+                     <span class="variable">map</span>(<span class="localvariable">indexOrEnd</span>, [<span class="string">&quot;*&quot;</span>, <span class="string">&quot;{&quot;</span>]));
+    <span class="keyword">var</span> <span class="variabledef">part</span> = <span class="localvariable">text</span>.<span class="property">slice</span>(<span class="atom">0</span>, <span class="localvariable">end</span>);
+    <span class="localvariable">text</span> = <span class="localvariable">text</span>.<span class="property">slice</span>(<span class="localvariable">end</span>);
+    <span class="keyword">return</span> <span class="localvariable">part</span>;
+  }
+
+  <span class="keyword">function</span> <span class="variabledef">takeUpTo</span>(<span class="variabledef">character</span>) {
+    <span class="keyword">var</span> <span class="variabledef">end</span> = <span class="localvariable">text</span>.<span class="property">indexOf</span>(<span class="localvariable">character</span>, <span class="atom">1</span>);
+    <span class="keyword">if</span> (<span class="localvariable">end</span> == -<span class="atom">1</span>)
+      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="variable">Error</span>(<span class="string">&quot;Missing closing '&quot;</span> + <span class="localvariable">character</span> + <span class="string">&quot;'&quot;</span>);
+    <span class="keyword">var</span> <span class="variabledef">part</span> = <span class="localvariable">text</span>.<span class="property">slice</span>(<span class="atom">1</span>, <span class="localvariable">end</span>);
+    <span class="localvariable">text</span> = <span class="localvariable">text</span>.<span class="property">slice</span>(<span class="localvariable">end</span> + <span class="atom">1</span>);
+    <span class="keyword">return</span> <span class="localvariable">part</span>;
+  }
+
+  <span class="keyword">var</span> <span class="variabledef">fragments</span> = [];
+
+  <span class="keyword">while</span> (<span class="localvariable">text</span> != <span class="string">&quot;&quot;</span>) {
+    <span class="keyword">if</span> (<span class="localvariable">text</span>.<span class="property">charAt</span>(<span class="atom">0</span>) == <span class="string">&quot;*&quot;</span>)
+      <span class="localvariable">fragments</span>.<span class="property">push</span>({<span class="property">type</span>: <span class="string">&quot;emphasised&quot;</span>,
+                      <span class="property">content</span>: <span class="localvariable">takeUpTo</span>(<span class="string">&quot;*&quot;</span>)});
+    <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">text</span>.<span class="property">charAt</span>(<span class="atom">0</span>) == <span class="string">&quot;{&quot;</span>)
+      <span class="localvariable">fragments</span>.<span class="property">push</span>({<span class="property">type</span>: <span class="string">&quot;footnote&quot;</span>,
+                      <span class="property">content</span>: <span class="localvariable">takeUpTo</span>(<span class="string">&quot;}&quot;</span>)});
+    <span class="keyword">else</span>
+      <span class="localvariable">fragments</span>.<span class="property">push</span>({<span class="property">type</span>: <span class="string">&quot;normal&quot;</span>,
+                      <span class="property">content</span>: <span class="localvariable">takeNormal</span>()});
+  }
+  <span class="keyword">return</span> <span class="localvariable">fragments</span>;
+}</pre><p>Note the over-eager use of <code>map</code> and <code>reduce</code> in the <code>takeNormal</code>
+function. This is a chapter about functional programming, so program
+functionally we will! Can you see how this works? The <code>map</code> produces
+an array of positions where the given characters were found, or the
+end of the string if they were not found, and the <code>reduce</code> takes the
+minimum of them, which is the next point in the string that we have to
+look at.</p><p>If you'd write that out without mapping and reducing you'd get
+something like this:</p><pre class="code invalid"><span class="keyword">var</span> <span class="variable">nextAsterisk</span> = <span class="variable">text</span>.<span class="property">indexOf</span>(<span class="string">&quot;*&quot;</span>);
+<span class="keyword">var</span> <span class="variable">nextBrace</span> = <span class="variable">text</span>.<span class="property">indexOf</span>(<span class="string">&quot;{&quot;</span>);
+<span class="keyword">var</span> <span class="variable">end</span> = <span class="variable">text</span>.<span class="property">length</span>;
+<span class="keyword">if</span> (<span class="variable">nextAsterisk</span> != -<span class="atom">1</span>)
+  <span class="variable">end</span> = <span class="variable">nextAsterisk</span>;
+<span class="keyword">if</span> (<span class="variable">nextBrace</span> != -<span class="atom">1</span> &amp;&amp; <span class="variable">nextBrace</span> &lt; <span class="variable">end</span>)
+  <span class="variable">end</span> = <span class="variable">nextBrace</span>;</pre><p>Which is even more hideous. Most of the time, when a decision has to
+be made based on a series of things, even if there are only two of
+them, writing it as array operations is nicer than handling every
+value in a separate <code>if</code> statement. (Fortunately, <a href="chapter10.html">chapter 10</a> describes
+an easier way to ask for the first occurrence of 'this or that
+character' in a string.)</p><p>If you wrote a <code>splitParagraph</code> that stored fragments in a different
+way than the solution above, you might want to adjust it, because the
+functions in the rest of the chapter assume that fragments are objects
+with <code>type</code> and <code>content</code> properties.</p></div></div><hr/><div class="block"><p>We can now wire <code>processParagraph</code> to also split the text inside the
+paragraphs, my version can be modified like this:</p><pre class="code"><span class="keyword">function</span> <span class="variable">processParagraph</span>(<span class="variabledef">paragraph</span>) {
+  <span class="keyword">var</span> <span class="variabledef">header</span> = <span class="atom">0</span>;
+  <span class="keyword">while</span> (<span class="localvariable">paragraph</span>.<span class="property">charAt</span>(<span class="atom">0</span>) == <span class="string">&quot;%&quot;</span>) {
+    <span class="localvariable">paragraph</span> = <span class="localvariable">paragraph</span>.<span class="property">slice</span>(<span class="atom">1</span>);
+    <span class="localvariable">header</span>++;
+  }
+
+  <span class="keyword">return</span> {<span class="property">type</span>: (<span class="localvariable">header</span> == <span class="atom">0</span> ? <span class="string">&quot;p&quot;</span> : <span class="string">&quot;h&quot;</span> + <span class="localvariable">header</span>),
+          <span class="property">content</span>: <span class="variable">splitParagraph</span>(<span class="localvariable">paragraph</span>)};
+}</pre><p>Mapping that over the array of paragraphs gives us an array of
+paragraph objects, which in turn contain arrays of fragment objects.
+The next thing to do is to take out the footnotes, and put references
+to them in their place. Something like this:</p><pre class="code"><span class="keyword">function</span> <span class="variable">extractFootnotes</span>(<span class="variabledef">paragraphs</span>) {
+  <span class="keyword">var</span> <span class="variabledef">footnotes</span> = [];
+  <span class="keyword">var</span> <span class="variabledef">currentNote</span> = <span class="atom">0</span>;
+
+  <span class="keyword">function</span> <span class="variabledef">replaceFootnote</span>(<span class="variabledef">fragment</span>) {
+    <span class="keyword">if</span> (<span class="localvariable">fragment</span>.<span class="property">type</span> == <span class="string">&quot;footnote&quot;</span>) {
+      <span class="localvariable">currentNote</span>++;
+      <span class="localvariable">footnotes</span>.<span class="property">push</span>(<span class="localvariable">fragment</span>);
+      <span class="localvariable">fragment</span>.<span class="property">number</span> = <span class="localvariable">currentNote</span>;
+      <span class="keyword">return</span> {<span class="property">type</span>: <span class="string">&quot;reference&quot;</span>, <span class="property">number</span>: <span class="localvariable">currentNote</span>};
+    }
+    <span class="keyword">else</span> {
+      <span class="keyword">return</span> <span class="localvariable">fragment</span>;
+    }
+  }
+
+  <span class="variable">forEach</span>(<span class="localvariable">paragraphs</span>, <span class="keyword">function</span>(<span class="variabledef">paragraph</span>) {
+    <span class="localvariable">paragraph</span>.<span class="property">content</span> = <span class="variable">map</span>(<span class="localvariable">replaceFootnote</span>,
+                            <span class="localvariable">paragraph</span>.<span class="property">content</span>);
+  });
+
+  <span class="keyword">return</span> <span class="localvariable">footnotes</span>;
+}     </pre><p>The <code>replaceFootnote</code> function is called on every fragment. When it
+gets a fragment that should stay where it is, it just returns it, but
+when it gets a footnote, it stores this footnote in the <code>footnotes</code>
+array, and returns a reference to it instead. In the process, every
+footnote and reference is also numbered.</p></div><hr/><div class="block"><p>That gives us enough tools to extract the information we need from the
+file. All that is left now is generating the correct HTML.</p><p>A lot of people think that concatenating strings is a great way to
+produce HTML. When they need a link to, for example, a site where you
+can play the game of Go, they will do:</p><pre class="code"><span class="keyword">var</span> <span class="variable">url</span> = <span class="string">&quot;http://www.gokgs.com/&quot;</span>;
+<span class="keyword">var</span> <span class="variable">text</span> = <span class="string">&quot;Play Go!&quot;</span>;
+<span class="keyword">var</span> <span class="variable">linkText</span> = <span class="string">&quot;&lt;a href=\&quot;&quot;</span> + <span class="variable">url</span> + <span class="string">&quot;\&quot;&gt;&quot;</span> + <span class="variable">text</span> + <span class="string">&quot;&lt;/a&gt;&quot;</span>;
+<span class="variable">print</span>(<span class="variable">linkText</span>);</pre><p>(Where <code>a</code> is the tag used to create links in HTML documents.) ... Not
+only is this clumsy, but when the string <code>text</code> happens to include an
+angular bracket or an ampersand, it is also wrong. Weird things will
+happen on your website, and you will look embarrassingly amateurish.
+We wouldn't want that to happen. A few simple HTML-generating
+functions are easy to write. So let us write them.</p></div><hr/><div class="block"><p>The secret to successful HTML generation is to treat your HTML
+document as a data structure instead of a flat piece of text.
+JavaScript's objects provide a very easy way to model this:</p><pre class="code"><span class="keyword">var</span> <span class="variable">linkObject</span> = {<span class="property">name</span>: <span class="string">&quot;a&quot;</span>,
+                  <span class="property">attributes</span>: {<span class="property">href</span>: <span class="string">&quot;http://www.gokgs.com/&quot;</span>},
+                  <span class="property">content</span>: [<span class="string">&quot;Play Go!&quot;</span>]};</pre><p>Each HTML element contains a <code>name</code> property, giving the name of the
+tag it represents. When it has attributes, it also contains an
+<code>attributes</code> property, which contains an object in which the
+attributes are stored. When it has content, there is a <code>content</code>
+property, containing an array of other elements contained in this
+element. Strings play the role of pieces of text in our HTML document,
+so the array <code>[&quot;Play Go!&quot;]</code> means that this link has only one element
+inside it, which is a simple piece of text.</p><p>Typing in these objects directly is clumsy, but we don't have to do
+that. We provide a shortcut function to do this for us:</p><pre class="code"><span class="keyword">function</span> <span class="variable">tag</span>(<span class="variabledef">name</span>, <span class="variabledef">content</span>, <span class="variabledef">attributes</span>) {
+  <span class="keyword">return</span> {<span class="property">name</span>: <span class="localvariable">name</span>, <span class="property">attributes</span>: <span class="localvariable">attributes</span>, <span class="property">content</span>: <span class="localvariable">content</span>};
+}</pre><p>Note that, since we allow the <code>attributes</code> and <code>content</code> of an element
+to be undefined if they are not applicable, the second and third
+argument to this function can be left off when they are not needed.</p><p><code>tag</code> is still rather primitive, so we write shortcuts for common
+types of elements, such as links, or the outer structure of a simple
+document:</p><pre class="code"><span class="keyword">function</span> <span class="variable">link</span>(<span class="variabledef">target</span>, <span class="variabledef">text</span>) {
+  <span class="keyword">return</span> <span class="variable">tag</span>(<span class="string">&quot;a&quot;</span>, [<span class="localvariable">text</span>], {<span class="property">href</span>: <span class="localvariable">target</span>});
+}
+
+<span class="keyword">function</span> <span class="variable">htmlDoc</span>(<span class="variabledef">title</span>, <span class="variabledef">bodyContent</span>) {
+  <span class="keyword">return</span> <span class="variable">tag</span>(<span class="string">&quot;html&quot;</span>, [<span class="variable">tag</span>(<span class="string">&quot;head&quot;</span>, [<span class="variable">tag</span>(<span class="string">&quot;title&quot;</span>, [<span class="localvariable">title</span>])]),
+                      <span class="variable">tag</span>(<span class="string">&quot;body&quot;</span>, <span class="localvariable">bodyContent</span>)]);
+}</pre></div><hr/><div class="block"><a name="exercise4"></a><div class="exercisenum">Ex. 6.4</div><div class="exercise"><p>Looking back at the example HTML document if necessary, write an
+<code>image</code> function which, when given the location of an image file, will
+create an <code>img</code> HTML element.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">image</span>(<span class="variabledef">src</span>) {
+  <span class="keyword">return</span> <span class="variable">tag</span>(<span class="string">&quot;img&quot;</span>, [], {<span class="property">src</span>: <span class="localvariable">src</span>});
+}</pre></div></div><hr/><div class="block"><p>When we have created a document, it will have to be reduced to a
+string. But building this string from the data structures we have been
+producing is very straightforward. The important thing is to remember
+to transform the special characters in the text of our document...</p><pre class="code"><span class="keyword">function</span> <span class="variable">escapeHTML</span>(<span class="variabledef">text</span>) {
+  <span class="keyword">var</span> <span class="variabledef">replacements</span> = [[<span class="string">/&amp;/g</span>, <span class="string">&quot;&amp;amp;&quot;</span>], [<span class="string">/&quot;/g</span>, <span class="string">&quot;&amp;quot;&quot;</span>],
+                      [<span class="string">/&lt;/g</span>, <span class="string">&quot;&amp;lt;&quot;</span>], [<span class="string">/&gt;/g</span>, <span class="string">&quot;&amp;gt;&quot;</span>]];
+  <span class="variable">forEach</span>(<span class="localvariable">replacements</span>, <span class="keyword">function</span>(<span class="variabledef">replace</span>) {
+    <span class="localvariable">text</span> = <span class="localvariable">text</span>.<span class="property">replace</span>(<span class="localvariable">replace</span>[<span class="atom">0</span>], <span class="localvariable">replace</span>[<span class="atom">1</span>]);
+  });
+  <span class="keyword">return</span> <span class="localvariable">text</span>;
+}</pre><p>The <code>replace</code> method of strings creates a new string in which all
+occurrences of the pattern in the first argument are replaced by the
+second argument, so <code>&quot;Borobudur&quot;.replace(/r/g, &quot;k&quot;)</code> gives
+<code>&quot;Bokobuduk&quot;</code>. Don't worry about the pattern syntax here ― we'll get
+to that in <a href="chapter10.html">chapter 10</a>. The <code>escapeHTML</code> function puts the different
+replacements that have to be made into an array, so that it can loop
+over them and apply them to the argument one by one.</p><p>Double quotes are also replaced, because we will also be using this
+function for the text inside the attributes of HTML tags. Those will
+be surrounded by double quotes, and thus must not have any double
+quotes inside of them.</p><p>Calling replace four times means the computer has to go over the whole
+string four times to check and replace its content. This is not very
+efficient. If we cared enough, we could write a more complex version
+of this function, something that resembles the <code>splitParagraph</code>
+function we saw earlier, to go over it only once. For now, we are too
+lazy for this. Again, <a href="chapter10.html">chapter 10</a> shows a much better way to do this.</p></div><hr/><div class="block"><p>To turn an HTML element object into a string, we can use a recursive
+function like this:</p><pre class="code"><span class="keyword">function</span> <span class="variable">renderHTML</span>(<span class="variabledef">element</span>) {
+  <span class="keyword">var</span> <span class="variabledef">pieces</span> = [];
+
+  <span class="keyword">function</span> <span class="variabledef">renderAttributes</span>(<span class="variabledef">attributes</span>) {
+    <span class="keyword">var</span> <span class="variabledef">result</span> = [];
+    <span class="keyword">if</span> (<span class="localvariable">attributes</span>) {
+      <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">name</span> <span class="keyword">in</span> <span class="localvariable">attributes</span>) 
+        <span class="localvariable">result</span>.<span class="property">push</span>(<span class="string">&quot; &quot;</span> + <span class="localvariable">name</span> + <span class="string">&quot;=\&quot;&quot;</span> +
+                    <span class="variable">escapeHTML</span>(<span class="localvariable">attributes</span>[<span class="localvariable">name</span>]) + <span class="string">&quot;\&quot;&quot;</span>);
+    }
+    <span class="keyword">return</span> <span class="localvariable">result</span>.<span class="property">join</span>(<span class="string">&quot;&quot;</span>);
+  }
+
+  <span class="keyword">function</span> <span class="variabledef">render</span>(<span class="variabledef">element</span>) {
+    <span class="comment">// Text node</span>
+    <span class="keyword">if</span> (typeof <span class="localvariable">element</span> == <span class="string">&quot;string&quot;</span>) {
+      <span class="localvariable">pieces</span>.<span class="property">push</span>(<span class="variable">escapeHTML</span>(<span class="localvariable">element</span>));
+    }
+    <span class="comment">// Empty tag</span>
+    <span class="keyword">else</span> <span class="keyword">if</span> (!<span class="localvariable">element</span>.<span class="property">content</span> || <span class="localvariable">element</span>.<span class="property">content</span>.<span class="property">length</span> == <span class="atom">0</span>) {
+      <span class="localvariable">pieces</span>.<span class="property">push</span>(<span class="string">&quot;&lt;&quot;</span> + <span class="localvariable">element</span>.<span class="property">name</span> +
+                  <span class="localvariable">renderAttributes</span>(<span class="localvariable">element</span>.<span class="property">attributes</span>) + <span class="string">&quot;/&gt;&quot;</span>);
+    }
+    <span class="comment">// Tag with content</span>
+    <span class="keyword">else</span> {
+      <span class="localvariable">pieces</span>.<span class="property">push</span>(<span class="string">&quot;&lt;&quot;</span> + <span class="localvariable">element</span>.<span class="property">name</span> +
+                  <span class="localvariable">renderAttributes</span>(<span class="localvariable">element</span>.<span class="property">attributes</span>) + <span class="string">&quot;&gt;&quot;</span>);
+      <span class="variable">forEach</span>(<span class="localvariable">element</span>.<span class="property">content</span>, <span class="localvariable">render</span>);
+      <span class="localvariable">pieces</span>.<span class="property">push</span>(<span class="string">&quot;&lt;/&quot;</span> + <span class="localvariable">element</span>.<span class="property">name</span> + <span class="string">&quot;&gt;&quot;</span>);
+    }
+  }
+
+  <span class="localvariable">render</span>(<span class="localvariable">element</span>);
+  <span class="keyword">return</span> <span class="localvariable">pieces</span>.<span class="property">join</span>(<span class="string">&quot;&quot;</span>);
+}</pre><p>Note the <code>in</code> loop that extracts the properties from a JavaScript
+object in order to make HTML tag attributes out of them. Also note
+that in two places, arrays are being used to accumulate strings, which
+are then joined into a single result string. Why didn't I just start
+with an empty string and then add the content to it with the <code>+=</code>
+operator?</p><p>It turns out that creating new strings, especially big strings, is
+quite a lot of work. Remember that JavaScript string values never
+change. If you concatenate something to them, a new string is created,
+the old ones stay intact. If we build up a big string by concatenating
+lots of little strings, new strings have to be created at every step,
+only to be thrown away when the next piece is concatenated to them.
+If, on the other hand, we store all the little strings in an array and
+then join them, only <em>one</em> big string has to be created.</p></div><hr/><div class="block"><p>So, let us try out this HTML generating system...</p><pre class="code"><span class="variable">print</span>(<span class="variable">renderHTML</span>(<span class="variable">link</span>(<span class="string">&quot;http://www.nedroid.com&quot;</span>, <span class="string">&quot;Drawings!&quot;</span>)));</pre><p>That seems to work.</p><pre class="code"><span class="keyword">var</span> <span class="variable">body</span> = [<span class="variable">tag</span>(<span class="string">&quot;h1&quot;</span>, [<span class="string">&quot;The Test&quot;</span>]),
+            <span class="variable">tag</span>(<span class="string">&quot;p&quot;</span>, [<span class="string">&quot;Here is a paragraph, and an image...&quot;</span>]),
+            <span class="variable">image</span>(<span class="string">&quot;img/sheep.png&quot;</span>)];
+<span class="keyword">var</span> <span class="variable">doc</span> = <span class="variable">htmlDoc</span>(<span class="string">&quot;The Test&quot;</span>, <span class="variable">body</span>);
+<span class="variable">viewHTML</span>(<span class="variable">renderHTML</span>(<span class="variable">doc</span>));</pre><p>Now, I should probably warn you that this approach is not perfect.
+What it actually renders is <a name="key12"></a>XML, which is similar to HTML, but more
+structured. In simple cases, such as the above, this does not cause
+any problems. However, there are some things, which are correct XML,
+but not proper HTML, and these might confuse a browser that is trying
+to show the documents we create. For example, if you have an empty
+<code>script</code> tag (used to put JavaScript into a page) in your document,
+browsers will not realise that it is empty and think that everything
+after it is JavaScript. (In this case, the problem can be fixed by
+putting a single space inside of the tag, so that it is no longer
+empty, and gets a proper closing tag.)</p></div><hr/><div class="block"><a name="exercise5"></a><div class="exercisenum">Ex. 6.5</div><div class="exercise"><p>Write a function <code>renderFragment</code>, and use that to implement another
+function <code>renderParagraph</code>, which takes a paragraph object (with the
+footnotes already filtered out), and produces the correct HTML element
+(which might be a paragraph or a header, depending on the <code>type</code>
+property of the paragraph object).</p><p>This function might come in useful for rendering the footnote
+references:</p><pre class="code"><span class="keyword">function</span> <span class="variable">footnote</span>(<span class="variabledef">number</span>) {
+  <span class="keyword">return</span> <span class="variable">tag</span>(<span class="string">&quot;sup&quot;</span>, [<span class="variable">link</span>(<span class="string">&quot;#footnote&quot;</span> + <span class="localvariable">number</span>,
+                          <span class="variable">String</span>(<span class="localvariable">number</span>))]);
+}</pre><p>A <code>sup</code> tag will show its content as 'superscript', which means it
+will be smaller and a little higher than other text. The target of the
+link will be something like <code>&quot;#footnote1&quot;</code>. Links that contain a '#'
+character refer to 'anchors' within a page, and in this case we will
+use them to make it so that clicking on the footnote link will take
+the reader to the bottom of the page, where the footnotes live.</p><p>The tag to render emphasised fragments with is <code>em</code>, and normal text
+can be rendered without any extra tags.</p></div><div class="solution"><pre class="code"><span class="keyword">function</span> <span class="variable">renderParagraph</span>(<span class="variabledef">paragraph</span>) {
+  <span class="keyword">return</span> <span class="variable">tag</span>(<span class="localvariable">paragraph</span>.<span class="property">type</span>, <span class="variable">map</span>(<span class="variable">renderFragment</span>,
+                                 <span class="localvariable">paragraph</span>.<span class="property">content</span>));
+}
+
+<span class="keyword">function</span> <span class="variable">renderFragment</span>(<span class="variabledef">fragment</span>) {
+  <span class="keyword">if</span> (<span class="localvariable">fragment</span>.<span class="property">type</span> == <span class="string">&quot;reference&quot;</span>)
+    <span class="keyword">return</span> <span class="variable">footnote</span>(<span class="localvariable">fragment</span>.<span class="property">number</span>);
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">fragment</span>.<span class="property">type</span> == <span class="string">&quot;emphasised&quot;</span>)
+    <span class="keyword">return</span> <span class="variable">tag</span>(<span class="string">&quot;em&quot;</span>, [<span class="localvariable">fragment</span>.<span class="property">content</span>]);
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="localvariable">fragment</span>.<span class="property">type</span> == <span class="string">&quot;normal&quot;</span>)
+    <span class="keyword">return</span> <span class="localvariable">fragment</span>.<span class="property">content</span>;
+}</pre></div></div><hr/><div class="block"><p>We are almost finished. The only thing that we do not have a rendering
+function for yet are the footnotes. To make the <code>&quot;#footnote1&quot;</code> links
+work, an anchor must be included with every footnote. In HTML, an
+anchor is specified with an <code>a</code> element, which is also used for links.
+In this case, it needs a <code>name</code> attribute, instead of an <code>href</code>.</p><pre class="code"><span class="keyword">function</span> <span class="variable">renderFootnote</span>(<span class="variabledef">footnote</span>) {
+  <span class="keyword">var</span> <span class="variabledef">anchor</span> = <span class="variable">tag</span>(<span class="string">&quot;a&quot;</span>, [], {<span class="property">name</span>: <span class="string">&quot;footnote&quot;</span> + <span class="localvariable">footnote</span>.<span class="property">number</span>});
+  <span class="keyword">var</span> <span class="variabledef">number</span> = <span class="string">&quot;[&quot;</span> + <span class="localvariable">footnote</span>.<span class="property">number</span> + <span class="string">&quot;] &quot;</span>;
+  <span class="keyword">return</span> <span class="variable">tag</span>(<span class="string">&quot;p&quot;</span>, [<span class="variable">tag</span>(<span class="string">&quot;small&quot;</span>, [<span class="localvariable">anchor</span>, <span class="localvariable">number</span>,
+                                 <span class="localvariable">footnote</span>.<span class="property">content</span>])]);
+}</pre><p>Here, then, is the function which, when given a file in the correct
+format and a document title, returns an HTML document:</p><pre class="code"><span class="keyword">function</span> <span class="variable">renderFile</span>(<span class="variabledef">file</span>, <span class="variabledef">title</span>) {
+  <span class="keyword">var</span> <span class="variabledef">paragraphs</span> = <span class="variable">map</span>(<span class="variable">processParagraph</span>, <span class="localvariable">file</span>.<span class="property">split</span>(<span class="string">&quot;\n\n&quot;</span>));
+  <span class="keyword">var</span> <span class="variabledef">footnotes</span> = <span class="variable">map</span>(<span class="variable">renderFootnote</span>,
+                      <span class="variable">extractFootnotes</span>(<span class="localvariable">paragraphs</span>));
+  <span class="keyword">var</span> <span class="variabledef">body</span> = <span class="variable">map</span>(<span class="variable">renderParagraph</span>, <span class="localvariable">paragraphs</span>).<span class="property">concat</span>(<span class="localvariable">footnotes</span>);
+  <span class="keyword">return</span> <span class="variable">renderHTML</span>(<span class="variable">htmlDoc</span>(<span class="localvariable">title</span>, <span class="localvariable">body</span>));
+}
+
+<span class="variable">viewHTML</span>(<span class="variable">renderFile</span>(<span class="variable">recluseFile</span>(), <span class="string">&quot;The Book of Programming&quot;</span>));</pre><p>The <a name="key13"></a><code>concat</code> method of an array can be used to concatenate another
+array to it, similar to what the <code>+</code> operator does with strings.</p></div><hr/><div class="block"><p>In the chapters after this one, elementary higher-order functions like
+<code>map</code> and <code>reduce</code> will always be available and will be used by code
+examples. Now and then, a new useful tool is added to this. In
+<a href="chapter9.html">chapter 9</a>, we develop a more structured approach to this set of
+'basic' functions.</p></div><hr/><div class="block"><p>When using higher-order functions, it is often annoying that operators
+are not functions in JavaScript. We have needed <code>add</code> or <code>equals</code>
+functions at several points. Rewriting these every time, you will
+agree, is a pain. From now on, we will assume the existence of an
+object called <code>op</code>, which contains these functions:</p><pre class="code"><span class="keyword">var</span> <span class="variable">op</span> = {
+  <span class="string">&quot;+&quot;</span>: <span class="keyword">function</span>(<span class="variabledef">a</span>, <span class="variabledef">b</span>){<span class="keyword">return</span> <span class="localvariable">a</span> + <span class="localvariable">b</span>;},
+  <span class="string">&quot;==&quot;</span>: <span class="keyword">function</span>(<span class="variabledef">a</span>, <span class="variabledef">b</span>){<span class="keyword">return</span> <span class="localvariable">a</span> == <span class="localvariable">b</span>;},
+  <span class="string">&quot;===&quot;</span>: <span class="keyword">function</span>(<span class="variabledef">a</span>, <span class="variabledef">b</span>){<span class="keyword">return</span> <span class="localvariable">a</span> === <span class="localvariable">b</span>;},
+  <span class="string">&quot;!&quot;</span>: <span class="keyword">function</span>(<span class="variabledef">a</span>){<span class="keyword">return</span> !<span class="localvariable">a</span>;}
+  <span class="comment">/* and so on */</span>
+};</pre><p>So we can write <code>reduce(op[&quot;+&quot;], 0, [1, 2, 3, 4, 5])</code> to sum an array.
+But what if we need something like <code>equals</code> or <code>makeAddFunction</code>, in
+which one of the arguments already has a value? In that case we are
+back to writing a new function again.</p><p>For cases like that, something called '<a name="key14"></a>partial application' is
+useful. You want to create a new function that already knows some of
+its arguments, and treats any additional arguments it is passed as
+coming after these fixed arguments. This can be done by making
+creative use of the <code>apply</code> method of a function:</p><pre class="code"><span class="keyword">function</span> <span class="variable">asArray</span>(<span class="variabledef">quasiArray</span>, <span class="variabledef">start</span>) {
+  <span class="keyword">var</span> <span class="variabledef">result</span> = [];
+  <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variabledef">i</span> = (<span class="localvariable">start</span> || <span class="atom">0</span>); <span class="localvariable">i</span> &lt; <span class="localvariable">quasiArray</span>.<span class="property">length</span>; <span class="localvariable">i</span>++)
+    <span class="localvariable">result</span>.<span class="property">push</span>(<span class="localvariable">quasiArray</span>[<span class="localvariable">i</span>]);
+  <span class="keyword">return</span> <span class="localvariable">result</span>;
+}
+
+<span class="keyword">function</span> <span class="variable">partial</span>(<span class="variabledef">func</span>) {
+  <span class="keyword">var</span> <span class="variabledef">fixedArgs</span> = <span class="variable">asArray</span>(<span class="localvariable">arguments</span>, <span class="atom">1</span>);
+  <span class="keyword">return</span> <span class="keyword">function</span>(){
+    <span class="keyword">return</span> <span class="localvariable">func</span>.<span class="property">apply</span>(<span class="atom">null</span>, <span class="localvariable">fixedArgs</span>.<span class="property">concat</span>(<span class="variable">asArray</span>(<span class="localvariable">arguments</span>)));
+  };
+}</pre><p>We want to allow binding multiple arguments at the same time, so the
+<code>asArray</code> function is necessary to make normal arrays out of the
+<code>arguments</code> objects. It copies their content into a real array, so
+that the <code>concat</code> method can be used on it. It also takes an optional
+second argument, which can be used to leave out some arguments at the
+start.</p><p>Also note that it is necessary to store the <code>arguments</code> of the outer
+function (<code>partial</code>) into a variable with another name, because
+otherwise the inner function can not see them ― it has its own
+<code>arguments</code> variable, which shadows the one of the outer function.</p><p>Now <code>equals(10)</code> can be written as <code>partial(op[&quot;==&quot;], 10)</code>.</p><pre class="code"><span class="variable">show</span>(<span class="variable">map</span>(<span class="variable">partial</span>(<span class="variable">op</span>[<span class="string">&quot;+&quot;</span>], <span class="atom">1</span>), [<span class="atom">0</span>, <span class="atom">2</span>, <span class="atom">4</span>, <span class="atom">6</span>, <span class="atom">8</span>, <span class="atom">10</span>]));</pre><p>The reason <code>map</code> takes its function argument before its array argument
+is that it is often useful to partially apply map by giving it a
+function. This 'lifts' the function from operating on a single value
+to operating on an array of values. For example, if you have an array
+of arrays of numbers, and you want to square them all, you do this:</p><pre class="code"><span class="keyword">function</span> <span class="variable">square</span>(<span class="variabledef">x</span>) {<span class="keyword">return</span> <span class="localvariable">x</span> * <span class="localvariable">x</span>;}
+
+<span class="variable">show</span>(<span class="variable">map</span>(<span class="variable">partial</span>(<span class="variable">map</span>, <span class="variable">square</span>), [[<span class="atom">10</span>, <span class="atom">100</span>], [<span class="atom">12</span>, <span class="atom">16</span>], [<span class="atom">0</span>, <span class="atom">1</span>]]));</pre></div><hr/><div class="block"><p>One last trick that can be useful when you want to combine functions
+is <a name="key15"></a>function composition. At the start of this chapter I showed a
+function <code>negate</code>, which applies the boolean <em>not</em> operator to the
+result of calling a function:</p><pre class="code"><span class="keyword">function</span> <span class="variable">negate</span>(<span class="variabledef">func</span>) {
+  <span class="keyword">return</span> <span class="keyword">function</span>() {
+    <span class="keyword">return</span> !<span class="localvariable">func</span>.<span class="property">apply</span>(<span class="atom">null</span>, <span class="localvariable">arguments</span>);
+  };
+}</pre><p>This is a special case of a general pattern: call function A, and then
+apply function B to the result. Composition is a common concept in
+mathematics. <a name="key16"></a>It can be caught in a higher-order function
+like this:</p><pre class="code"><span class="keyword">function</span> <span class="variable">compose</span>(<span class="variabledef">func1</span>, <span class="variabledef">func2</span>) {
+  <span class="keyword">return</span> <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="localvariable">func1</span>(<span class="localvariable">func2</span>.<span class="property">apply</span>(<span class="atom">null</span>, <span class="localvariable">arguments</span>));
+  };
+}
+
+<span class="keyword">var</span> <span class="variable">isUndefined</span> = <span class="variable">partial</span>(<span class="variable">op</span>[<span class="string">&quot;===&quot;</span>], <span class="atom">undefined</span>);
+<span class="keyword">var</span> <span class="variable">isDefined</span> = <span class="variable">compose</span>(<span class="variable">op</span>[<span class="string">&quot;!&quot;</span>], <span class="variable">isUndefined</span>);
+<span class="variable">show</span>(<span class="variable">isDefined</span>(<span class="variable">Math</span>.<span class="property">PI</span>));
+<span class="variable">show</span>(<span class="variable">isDefined</span>(<span class="variable">Math</span>.<span class="property">PIE</span>));</pre><p>Here we are defining new functions without using the <code>function</code>
+keyword at all. This can be useful when you need to create a simple
+function to give to, for example, <code>map</code> or <code>reduce</code>. However, when a
+function becomes more complex than these examples, it is usually
+shorter (not to mention more efficient) to just write it out with
+<code>function</code>.</p></div><ol class="footnotes"><li><a name="footnote1"></a>Like this...</li></ol><div class="navigation"><a href="chapter5.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter7.html">Next chapter &gt;&gt;</a></div><div class="footer">© <a href="mailto:marijnh@gmail.com">Marijn Haverbeke</a> (<a href="http://creativecommons.org/licenses/by/3.0/">license</a>), written March to July 2007, last modified on April 4 2012.</div></div><script type="text/javascript" src="js/mochi.js"> </script><script type="text/javascript" src="js/codemirror.js"> </script><script type="text/javascript" src="js/ejs.js"> </script></body></html>

@@ -1,0 +1,597 @@
+<html><head><link rel="stylesheet" type="text/css" href="css/book.css"/><link rel="stylesheet" type="text/css" href="css/highlight.css"/><link rel="stylesheet" type="text/css" href="css/console.css"/><link rel="stylesheet" type="text/css" href="css/codemirror.css"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>Basic JavaScript: values, variables, and control flow -- Eloquent JavaScript</title></head><body><script type="text/javascript" src="js/before.js"> </script><div class="content"><script type="text/javascript">var chapterTag = 'basics';</script><div class="navigation"><a href="chapter1.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter3.html">Next chapter &gt;&gt;</a></div><h1><span class="number">Chapter 2: </span>Basic JavaScript: values, variables, and control flow</h1><div class="block"><p>Inside the computer's world, there is only data. That which is not
+data, does not exist. Although all data is in essence just a sequence
+of bits<a class="footref" href="#footnote1">1</a>, and is thus fundamentally alike, every piece of data plays
+its own role. In JavaScript's system, most of this data is neatly
+separated into things called <a name="key1"></a>values. Every value has a type, which
+determines the kind of role it can play. There are six basic types of
+values: Numbers, strings, booleans, objects, functions, and undefined
+values.</p><p>To create a value, one must merely invoke its name. This is very
+convenient. You don't have to gather building material for your
+values, or pay for them, you just call for one and <em>woosh</em>, you have
+it. They are not created from thin air, of course. Every value has to
+be stored somewhere, and if you want to use a gigantic number of them
+at the same time you might run out of computer memory. Fortunately,
+this is only a problem if you need them all simultaneously. As soon as
+you no longer use a value, it will dissipate, leaving behind only a
+few bits. These bits are recycled to make the next generation of
+values.</p></div><hr/><div class="block"><p>Values of the type <a name="key2"></a>number are, as you might have deduced, numeric
+values. They are written the way numbers are usually written:</p><pre class="code expression"><span class="atom">144</span></pre><p>Enter that in the console, and the same thing is printed in the output
+window. The text you typed in gave rise to a number value, and the
+console took this number and wrote it out to the screen again. In a
+case like this, that was a rather pointless exercise, but soon we will
+be producing values in less straightforward ways, and it can be useful
+to 'try them out' on the console to see what they produce.</p><p>This is what <code>144</code> looks like in bits<a class="footref" href="#footnote2">2</a>:</p><pre class="preformatted">0100000001100010000000000000000000000000000000000000000000000000</pre><p>The number above has 64 bits. Numbers in JavaScript always do. This
+has one important repercussion: There is a limited amount of different
+numbers that can be expressed. With three decimal digits, only the
+numbers 0 to 999 can be written, which is 10<sup>3</sup> = 1000 different
+numbers. With 64 binary digits, 2<sup>64</sup> different numbers can be written.
+This is a lot, more than 10<sup>19</sup> (a one with nineteen zeroes).</p><p>Not all whole numbers below 10<sup>19</sup> fit in a JavaScript number though.
+For one, there are also negative numbers, so one of the bits has to be
+used to store the sign of the number. A bigger issue is that non-whole
+numbers must also be represented. To do this, 11 bits are used to
+store the position of the fractional dot within the number.</p><p>That leaves 52 bits<a class="footref" href="#footnote3">3</a>. Any whole number less than 2<sup>52</sup>, which is over
+10<sup>15</sup>, will safely fit in a JavaScript number. In most cases, the
+numbers we are using stay well below that, so we do not have to
+concern ourselves with bits at all. Which is good. I have nothing in
+particular against bits, but you <em>do</em> need a terrible lot of them to
+get anything done. When at all possible, it is more pleasant to deal
+with bigger things.</p><p>Fractional numbers are written by using a dot.</p><pre class="code expression"><span class="atom">9.81</span></pre><p>For very big or very small numbers, one can also use 'scientific'
+notation by adding an <code>e</code>, followed by the exponent of the number:</p><pre class="code expression"><span class="atom">2.998e8</span></pre><p>Which is 2.998 * 10<sup>8</sup> = 299800000.</p><p>Calculations with whole numbers (also called integers) that fit in 52
+bits are guaranteed to always be precise. Unfortunately, calculations
+with fractional numbers are generally not. The same way that π (pi) can not be
+precisely expressed by a finite amount of decimal digits, many numbers
+lose some precision when only 64 bits are available to store them.
+This is a shame, but it only causes practical problems in very
+specific situations. The important thing is to be aware of it, and
+treat fractional digital numbers as approximations, not as precise
+values.</p></div><hr/><div class="block"><p>The main thing to do with numbers is arithmetic. Arithmetic operations
+such as addition or multiplication take two number values and produce
+a new number from them. Here is what they look like in JavaScript:</p><pre class="code expression"><span class="atom">100</span> + <span class="atom">4</span> * <span class="atom">11</span></pre><p>The <a name="key3"></a><code>+</code> and <a name="key4"></a><code>*</code> symbols are called operators. The first stands for
+addition, and the second for multiplication. Putting an operator
+between two values will <a name="key5"></a>apply it to those values, and
+produce a new value.</p><p>Does the example mean 'add 4 and 100, and multiply the result by 11',
+or is the multiplication done before the adding? As you might have
+guessed, the multiplication happens first. But, as in mathematics,
+this can be changed by wrapping the addition in parentheses<a name="key6"></a>:</p><pre class="code expression">(<span class="atom">100</span> + <span class="atom">4</span>) * <span class="atom">11</span></pre><p>For subtraction, there is the <a name="key7"></a><code>-</code> operator, and division can be done
+with <a name="key8"></a><code>/</code>. When operators appear together without parentheses, the
+order in which they are applied is determined by the <a name="key9"></a>precedence of
+the operators. The first example shows that multiplication has a
+higher precedence than addition. Division and multiplication always
+come before subtraction and addition. When multiple operators with the
+same precedence appear next to each other (<code>1 - 1 + 1</code>) they are
+applied left-to-right.</p><p>Try to figure out what value this produces, and then run it to see if
+you were correct...</p><pre class="code expression"><span class="atom">115</span> * <span class="atom">4</span> - <span class="atom">4</span> + <span class="atom">88</span> / <span class="atom">2</span></pre><p>These rules of precedence are not something you should worry about.
+When in doubt, just add parentheses.</p><p>There is one more arithmetic operator which is probably less familiar
+to you. The <a name="key10"></a><code>%</code> symbol is used to represent the <a name="key11"></a>remainder operation.
+<code>X % Y</code> is the remainder of dividing <code>X</code> by <code>Y</code>. For example
+<code>314 % 100</code> is <code>14</code>, <code>10 % 3</code> is <code>1</code>, and <code>144 % 12</code> is <code>0</code>. Remainder
+has the same precedence as multiplication and division.</p></div><hr/><div class="block"><p>The next data type is the <a name="key12"></a>string. Its use is not as evident from its
+name as with numbers, but it also fulfills a very basic role. Strings
+are used to represent text, the name supposedly derives from the fact
+that it strings together a bunch of characters. Strings are written by
+enclosing their content in quotes:</p><pre class="code expression"><span class="string">&quot;Patch my boat with chewing gum.&quot;</span></pre><p>Almost anything can be put between double quotes, and JavaScript will
+make a string value out of it. But a few characters are tricky. You
+can imagine how putting quotes between quotes might be hard. Newlines,
+<a name="key13"></a>the things you get when you press enter, can also not be put
+between quotes, the string has to stay on a single line.</p><p>To be able to have such characters in a string, the following trick is
+used: Whenever a backslash ('<code>\</code>') is found inside quoted text, it
+indicates that the character after it has a special meaning. A quote
+that is preceded by a backslash will not end the string, but be part
+of it. When an '<code>n</code>' character occurs after a backslash, it is
+interpreted as a newline. Similarly, a '<code>t</code>' after a backslash means a
+tab character<a class="footref" href="#footnote4">4</a>.</p><pre class="code expression"><span class="string">&quot;This is the first line\nAnd this is the second&quot;</span></pre><p>Note that if you type this into the console, it'll display it back in
+'source' form, with the quotes and backslash escapes. To see only the
+actual text, you can type <code>print(&quot;a\nb&quot;)</code>. What that does precisely
+will be clarified a little further on.</p><p>There are of course situations where you want a backslash in a string
+to be just a backslash, not a special code. If two backslashes follow
+each other, they will collapse right into each other, and only one
+will be left in the resulting string value:</p><pre class="code expression"><span class="string">&quot;A newline character is written like \&quot;\\n\&quot;.&quot;</span></pre></div><hr/><div class="block"><p>Strings can not be divided, multiplied, or subtracted. The <a name="key14"></a><code>+</code>
+operator <em>can</em> be used on them. It does not add, but it concatenates,
+it glues two strings together.</p><pre class="code expression"><span class="string">&quot;con&quot;</span> + <span class="string">&quot;cat&quot;</span> + <span class="string">&quot;e&quot;</span> + <span class="string">&quot;nate&quot;</span></pre><p>There are more ways of manipulating strings, but these are discussed
+later.</p></div><hr/><div class="block"><p>Not all operators are symbols, some are written as words. For example,
+the <a name="key15"></a><code>typeof</code> operator, which produces a string value naming the type
+of the value you give it.</p><pre class="code expression">typeof <span class="atom">4.5</span></pre><p>The other operators we saw all operated on two values, <code>typeof</code> takes
+only one. Operators that use two values are called <a name="key16"></a>binary operators,
+while those that take one are called <a name="key17"></a>unary operators. The
+<a name="key18"></a>minus operator can be used both as a binary and a unary
+operator:</p><pre class="code expression">- (<span class="atom">10</span> - <span class="atom">2</span>)</pre></div><hr/><div class="block"><p>Then there are values of the <a name="key19"></a>boolean type. There are only two of
+these: <a name="key20"></a><code>true</code> and <a name="key21"></a><code>false</code>. Here is one way to produce a <code>true</code>
+value:</p><pre class="code expression"><span class="atom">3</span> &gt; <span class="atom">2</span></pre><p>And <code>false</code> can be produced like this:</p><pre class="code expression"><span class="atom">3</span> &lt; <span class="atom">2</span></pre><p>I hope you have seen the <a name="key22"></a><code>&gt;</code> and <a name="key23"></a><code>&lt;</code> signs before. They mean,
+respectively, 'is greater than' and 'is less than'. They are binary
+operators, and the result of applying them is a boolean value that
+indicates whether they hold in this case.</p><p>Strings can be compared in the same way:</p><pre class="code expression"><span class="string">&quot;Aardvark&quot;</span> &lt; <span class="string">&quot;Zoroaster&quot;</span></pre><p>The way strings are ordered is more or less alphabetic. More or
+less... Uppercase letters are always 'less' than lowercase ones, so
+<code>&quot;Z&quot; &lt; &quot;a&quot;</code> (upper-case Z, lower-case a) is <code>true</code>, and non-alphabetic
+characters ('<code>!</code>', '<code>@</code>', etc) are also included in the ordering. The
+actual way in which the comparison is done is based on the <a name="key24"></a>Unicode
+standard. This standard assigns a number to virtually every character
+one would ever need, including characters from Greek, Arabic,
+Japanese, Tamil, and so on. Having such numbers is practical for
+storing strings inside a computer ― you can represent them as a list
+of numbers. When comparing strings, JavaScript just compares the
+numbers of the characters inside the string, from left to right.</p><p>Other similar operators are <a name="key25"></a><code>&gt;=</code> ('is greater than or equal to'),
+<a name="key26"></a><code>&lt;=</code> (is less than or equal to), <a name="key27"></a><code>==</code> ('is equal to'), and <a name="key28"></a><code>!=</code>
+('is not equal to').</p><pre class="code expression"><span class="string">&quot;Itchy&quot;</span> != <span class="string">&quot;Scratchy&quot;</span></pre><pre class="code expression"><span class="atom">5e2</span> == <span class="atom">500</span></pre></div><hr/><div class="block"><p>There are also some useful operations that can be applied to boolean
+values themselves. JavaScript supports three logical operators: <em>and</em>,
+<em>or</em>, and <em>not</em>. These can be used to 'reason' about booleans.</p><p>The <a name="key29"></a><code>&amp;&amp;</code> operator represents logical <em>and</em>. It is a binary operator,
+and its result is only <code>true</code> if both of the values given to it are
+<code>true</code>.</p><pre class="code expression"><span class="atom">true</span> &amp;&amp; <span class="atom">false</span></pre><p><a name="key30"></a><code>||</code> is the logical <em>or</em>, it is <code>true</code> if either of the values given
+to it is <code>true</code>:</p><pre class="code expression"><span class="atom">true</span> || <span class="atom">false</span></pre><p><em>Not</em> is written as an exclamation mark, <a name="key31"></a><code>!</code>, it is a unary operator
+that flips the value given to it, <code>!true</code> is <code>false</code>, and <code>!false</code> is
+<code>true</code>.</p></div><hr/><div class="block"><a name="exercise1"></a><div class="exercisenum">Ex. 2.1</div><div class="exercise"><pre class="code expression">((<span class="atom">4</span> &gt;= <span class="atom">6</span>) || (<span class="string">&quot;grass&quot;</span> != <span class="string">&quot;green&quot;</span>)) &amp;&amp;
+   !(((<span class="atom">12</span> * <span class="atom">2</span>) == <span class="atom">144</span>) &amp;&amp; <span class="atom">true</span>)</pre><p>Is this true? For readability, there are a lot of unnecessary
+parentheses in there. This simple version means the same thing:</p><pre class="code expression">(<span class="atom">4</span> &gt;= <span class="atom">6</span> || <span class="string">&quot;grass&quot;</span> != <span class="string">&quot;green&quot;</span>) &amp;&amp;
+   !(<span class="atom">12</span> * <span class="atom">2</span> == <span class="atom">144</span> &amp;&amp; <span class="atom">true</span>)</pre></div><div class="solution"><p>Yes, it is <code>true</code>. You can reduce it step by step like this:</p><pre class="code expression">(<span class="atom">false</span> || <span class="atom">true</span>) &amp;&amp; !(<span class="atom">false</span> &amp;&amp; <span class="atom">true</span>)</pre><pre class="code expression"><span class="atom">true</span> &amp;&amp; !<span class="atom">false</span></pre><pre class="code expression"><span class="atom">true</span></pre><p>I hope you noticed that <code>&quot;grass&quot; != &quot;green&quot;</code> is <code>true</code>. Grass may be
+green, but it is not equal to green.</p></div></div><hr/><div class="block"><p>It is not always obvious when parentheses are needed. In practice, one
+can usually get by with knowing that of the operators we have seen so
+far, <code>||</code> has the lowest precedence, then comes <code>&amp;&amp;</code>, then the
+comparison operators (<code>&gt;</code>, <code>==</code>, etcetera), and then the rest. This
+has been chosen in such a way that, in simple cases, as few
+parentheses as possible are necessary.</p></div><hr/><div class="block"><p>All the examples so far have used the language like you would use a
+pocket calculator. Make some values and apply operators to them to get
+new values. Creating values like this is an essential part of every
+JavaScript program, but it is only a part. A piece of code that
+produces a value is called an <a name="key32"></a>expression. Every value that is
+written directly (such as <code>22</code> or <code>&quot;psychoanalysis&quot;</code>) is an
+expression. An expression between parentheses is also an expression.
+And a binary operator applied to two expressions, or a unary operator
+applied to one, is also an expression.</p><p>There are a few more ways of building expressions, which will be
+revealed when the time is ripe.</p><p>There exists a unit that is bigger than an expression. It is called a
+<a name="key33"></a>statement. A program is built as a list of statements. Most
+statements end with a <a name="key34"></a>semicolon (<code>;</code>). The simplest kind of
+statement is an expression with a semicolon after it. This is a
+program:</p><pre class="code"><span class="atom">1</span>;
+!<span class="atom">false</span>;</pre><p>It is a useless program. An expression can be content to just produce
+a value, but a statement only amounts to something if it somehow
+changes the world. It could print something to the screen ― that
+counts as changing the world ― or it could change the internal state
+of the program in a way that will affect the statements that come
+after it. These changes are called '<a name="key35"></a>side effects'. The statements in
+the example above just produce the values <code>1</code> and <code>true</code>, and then
+immediately throw them into the bit bucket<a class="footref" href="#footnote5">5</a>. This leaves no
+impression on the world at all, and is not a side effect.</p></div><hr/><div class="block"><p>How does a program keep an internal state? How does it remember
+things? We have seen how to produce new values from old values, but
+this does not change the old values, and the new value has to be
+immediately used or it will dissipate again. To catch and hold values,
+JavaScript provides a thing called a <a name="key36"></a>variable.</p><pre class="code"><span class="keyword">var</span> <span class="variable">caught</span> = <span class="atom">5</span> * <span class="atom">5</span>;</pre><p>A variable always has a name, and it can point at a value, holding on
+to it. The statement above creates a variable called <code>caught</code> and uses
+it to grab hold of the number that is produced by multiplying <code>5</code> by
+<code>5</code>.</p><p>After running the above program, you can type the word <code>caught</code> into
+the console, and it will retrieve the value <code>25</code> for you. The name of
+a variable is used to fetch its value. <code>caught + 1</code> also works. A
+variable name can be used as an expression, and thus can be part of
+bigger expressions.</p><p>The word <a name="key37"></a><code>var</code> is used to create a new variable. After <code>var</code>, the
+name of the variable follows. Variable names can be almost every word,
+but they may not include spaces. Digits can be part of variable names,
+<code>catch22</code> is a valid name, but the name must not start with one. The
+characters '<code>$</code>' and '<code>_</code>' can be used in names as if they were
+letters, so <code>$_$</code> is a correct variable name.</p><p>If you want the new variable to immediately capture a value, which is
+often the case, the <a name="key38"></a><code>=</code> operator can be used to give it the value of
+some expression.</p><p>When a variable points at a value, that does not mean it is tied to
+that value forever. At any time, the <code>=</code> operator can be used on
+existing variables to yank them away from their current value and make
+them point to a new one.</p><pre class="code"><span class="variable">caught</span> = <span class="atom">4</span> * <span class="atom">4</span>;</pre></div><hr/><div class="block"><p>You should imagine variables as tentacles, rather than boxes. They do
+not <em>contain</em> values, they <em>grasp</em> them ― two variables can refer to
+the same value. Only the values that the program still has a hold on
+can be accessed by it. When you need to remember something, you grow a
+tentacle to hold on to it, or re-attach one of your existing tentacles
+to a new value: To remember the amount of dollars that Luigi still
+owes you, you could do...</p><pre class="code"><span class="keyword">var</span> <span class="variable">luigiDebt</span> = <span class="atom">140</span>;</pre><p>Then, every time Luigi pays something back, this amount can be
+decremented by giving the variable a new number:</p><pre class="code"><span class="variable">luigiDebt</span> = <span class="variable">luigiDebt</span> - <span class="atom">35</span>;</pre><p>The collection of variables and their values that exist at a given
+time is called the <a name="key39"></a>environment. When a program starts up, this
+environment is not empty. It always contains a number of standard
+variables. When your browser loads a page, it creates a new
+environment and attaches these standard values to it. The variables
+created and modified by programs on that page survive until the
+browser goes to a new page.</p></div><hr/><div class="block"><p>A lot of the values provided by the standard environment have the type
+'<a name="key40"></a>function'. A function is a piece of program wrapped in a value.
+Generally, this piece of program does something useful, which can be
+invoked using the function value that contains it. In a browser
+environment, the variable <a name="key41"></a><code>alert</code> holds a function that shows a
+little dialog window with a message. It is used like this:</p><pre class="code"><span class="variable">alert</span>(<span class="string">&quot;Also, your hair is on fire.&quot;</span>);</pre><p><a name="key42"></a>Executing the code in a function is called <a name="key43"></a>invoking, calling,
+or <a name="key44"></a>applying it. The notation for doing this uses parentheses. Every
+expression that produces a function value can be invoked by putting
+parentheses after it. The string value between the parentheses is
+given to the function, which uses it as the text to show in the dialog
+window. Values given to functions are called <a name="key45"></a>parameters or
+<a name="key46"></a>arguments. <code>alert</code> needs only one of them, but other functions might
+need a different number.</p></div><hr/><div class="block"><p>Showing a dialog window is a side effect. A lot of functions are
+useful because of the side effects they produce. It is also possible
+for a function to produce a value, in which case it does not need to
+have a side effect to be useful. For example, there is a function
+<a name="key47"></a><code>Math.max</code>, which takes two arguments and gives back the biggest of
+the two:</p><pre class="code"><span class="variable">alert</span>(<span class="variable">Math</span>.<span class="property">max</span>(<span class="atom">2</span>, <span class="atom">4</span>));</pre><p><a name="key48"></a>When a function produces a value, it is said to <a name="key49"></a>return
+it. Because things that produce values are always expressions in
+JavaScript, function calls can be used as a part of bigger
+expressions:</p><pre class="code"><span class="variable">alert</span>(<span class="variable">Math</span>.<span class="property">min</span>(<span class="atom">2</span>, <span class="atom">4</span>) + <span class="atom">100</span>);</pre><p><a href="chapter3.html">Chapter 3</a> discusses writing your own functions.</p></div><hr/><div class="block"><p>As the previous examples show, <code>alert</code> can be useful for showing the
+result of some expression. Clicking away all those little windows can
+get on one's nerves though, so from now on we will prefer to use a
+similar function, called <a name="key50"></a><code>print</code>, which does not pop up a window,
+but just writes a value to the output area of the console. <code>print</code> is
+not a standard JavaScript function, browsers do not provide it for
+you, but it is made available by this book, so you can use it on these
+pages.</p><pre class="code"><span class="variable">print</span>(<span class="string">&quot;N&quot;</span>);</pre><p>A similar function, also provided on these pages, is <code>show</code>. While
+<code>print</code> will display its argument as flat text, <a name="key51"></a><code>show</code> tries to
+display it the way it would look in a program, which can give more
+information about the type of the value. For example, string values
+keep their quotes when given to <code>show</code>:</p><pre class="code"><span class="variable">show</span>(<span class="string">&quot;N&quot;</span>);</pre><p>The standard environment provided by browsers contains a few more
+functions for popping up windows. You can ask the user an OK/Cancel
+question using <a name="key52"></a><code>confirm</code>. This returns a boolean, <code>true</code> if the user
+presses 'OK', and <code>false</code> if he presses 'Cancel'.</p><pre class="code"><span class="variable">show</span>(<span class="variable">confirm</span>(<span class="string">&quot;Shall we, then?&quot;</span>));</pre><p><a name="key53"></a><code>prompt</code> can be used to ask an 'open' question. The first argument
+is the question, the second one is the text that the user starts with.
+A line of text can be typed into the window, and the function will
+return this as a string.</p><pre class="code"><span class="variable">show</span>(<span class="variable">prompt</span>(<span class="string">&quot;Tell us everything you know.&quot;</span>, <span class="string">&quot;...&quot;</span>));</pre></div><hr/><div class="block"><p>It is possible to give almost every variable in the environment a new
+value. This can be useful, but also dangerous. If you give <code>print</code> the
+value <code>8</code>, you won't be able to print things anymore. Fortunately,
+there is a big 'Reset' button on the console, which will reset the
+environment to its original state.</p></div><hr/><div class="block"><p>One-line programs are not very interesting. When you put more than one
+statement into a program, the statements are, predictably, executed
+one at a time, from top to bottom.</p><pre class="code"><span class="keyword">var</span> <span class="variable">theNumber</span> = <span class="variable">Number</span>(<span class="variable">prompt</span>(<span class="string">&quot;Pick a number&quot;</span>, <span class="string">&quot;&quot;</span>));
+<span class="variable">print</span>(<span class="string">&quot;Your number is the square root of &quot;</span> +
+      (<span class="variable">theNumber</span> * <span class="variable">theNumber</span>));</pre><p>The function <a name="key54"></a><code>Number</code> converts a value to a number, which is needed
+in this case because the result of <code>prompt</code> is a string value. There
+are similar functions called <a name="key55"></a><code>String</code> and <a name="key56"></a><code>Boolean</code> which convert
+values to those types.</p></div><hr/><div class="block"><p>Consider a program that prints out all even numbers from 0 to 12. One
+way to write this is:</p><pre class="code"><span class="variable">print</span>(<span class="atom">0</span>);
+<span class="variable">print</span>(<span class="atom">2</span>);
+<span class="variable">print</span>(<span class="atom">4</span>);
+<span class="variable">print</span>(<span class="atom">6</span>);
+<span class="variable">print</span>(<span class="atom">8</span>);
+<span class="variable">print</span>(<span class="atom">10</span>);
+<span class="variable">print</span>(<span class="atom">12</span>);</pre><p>That works, but the idea of writing a program is to make something
+<em>less</em> work, not more. If we needed all even numbers below 1000, the
+above would be unworkable. What we need is a way to automatically
+repeat some code.</p><pre class="code"><span class="keyword">var</span> <span class="variable">currentNumber</span> = <span class="atom">0</span>;
+<span class="keyword">while</span> (<span class="variable">currentNumber</span> &lt;= <span class="atom">12</span>) {
+  <span class="variable">print</span>(<span class="variable">currentNumber</span>);
+  <span class="variable">currentNumber</span> = <span class="variable">currentNumber</span> + <span class="atom">2</span>;
+}</pre><p>You may have seen <a name="key57"></a><code>while</code> in the introduction chapter. A statement
+starting with the word <code>while</code> creates a <a name="key58"></a>loop. A loop is a
+disturbance in the sequence of statements, it may cause the program to
+repeat some statements multiple times. In this case, the word <code>while</code>
+is followed by an expression in parentheses (the parentheses are
+compulsory here), which is used to determine whether the loop will
+loop or finish. As long as the boolean value produced by this
+expression is <code>true</code>, the code in the loop is repeated. As soon as it
+is false, the program goes to the bottom of the loop and continues as
+normal.</p><p>The variable <code>currentNumber</code> demonstrates the way a variable can track
+the progress of a program. Every time the loop repeats, it is
+incremented by <code>2</code>, and at the beginning of every repetition, it is
+compared with the number <code>12</code> to decide whether to keep on looping.</p><p>The third part of a <code>while</code> statement is another statement. This is
+the <a name="key59"></a>body of the loop, the action or actions that must take place
+multiple times. If we did not have to print the numbers, the program
+could have been:</p><pre class="code"><span class="keyword">var</span> <span class="variable">currentNumber</span> = <span class="atom">0</span>;
+<span class="keyword">while</span> (<span class="variable">currentNumber</span> &lt;= <span class="atom">12</span>)
+  <span class="variable">currentNumber</span> = <span class="variable">currentNumber</span> + <span class="atom">2</span>;</pre><p>Here, <code>currentNumber = currentNumber + 2;</code> is the statement that forms
+the body of the loop. We must also print the number, though, so the
+loop statement must consist of more than one statement. <a name="key60"></a>Braces
+(<code>{</code> and <code>}</code>) are used to group statements into <a name="key61"></a>blocks. To the world
+outside the block, a block counts as a single statement. In the earlier
+example, this is used to include in the loop both the call to <code>print</code>
+and the statement that updates <code>currentNumber</code>.</p></div><hr/><div class="block"><a name="exercise2"></a><div class="exercisenum">Ex. 2.2</div><div class="exercise"><p>Use the techniques shown so far to write a program that calculates and
+shows the value of 2<sup>10</sup> (2 to the 10th power). You are, obviously, not
+allowed to use a cheap trick like just writing <code>2 * 2 * ...</code>.</p><p>If you are having trouble with this, try to see it in terms of the
+even-numbers example. The program must perform an action a certain
+amount of times. A counter variable with a <code>while</code> loop can be used
+for that. Instead of printing the counter, the program must multiply
+something by 2. This something should be another variable, in which
+the result value is built up.</p><p>Don't worry if you don't quite see how this would work yet. Even if
+you perfectly understand all the techniques this chapter covers, it
+can be hard to apply them to a specific problem. Reading and writing
+code will help develop a feeling for this, so study the solution, and
+try the next exercise.</p></div><div class="solution"><pre class="code"><span class="keyword">var</span> <span class="variable">result</span> = <span class="atom">1</span>;
+<span class="keyword">var</span> <span class="variable">counter</span> = <span class="atom">0</span>;
+<span class="keyword">while</span> (<span class="variable">counter</span> &lt; <span class="atom">10</span>) {
+  <span class="variable">result</span> = <span class="variable">result</span> * <span class="atom">2</span>;
+  <span class="variable">counter</span> = <span class="variable">counter</span> + <span class="atom">1</span>;
+}
+<span class="variable">show</span>(<span class="variable">result</span>);</pre><p>The counter could also start at <code>1</code> and check for <code>&lt;= 10</code>, but, for
+reasons that will become apparent later on, it is a good idea to get
+used to counting from 0.</p><p>Obviously, your own solutions aren't required to be precisely the same
+as mine. They should work. And if they are very different, make sure
+you also understand my solution.</p></div></div><hr/><div class="block"><a name="exercise3"></a><div class="exercisenum">Ex. 2.3</div><div class="exercise"><p>With some slight modifications, the solution to the previous exercise
+can be made to draw a triangle. And when I say 'draw a triangle' I
+mean 'print out some text that almost looks like a triangle when you
+squint'.</p><p>Print out ten lines. On the first line there is one '#' character. On
+the second there are two. And so on.</p><p>How does one get a string with X '#' characters in it? One way is to
+build it every time it is needed with an 'inner loop' ― a loop inside
+a loop. A simpler way is to reuse the string that the previous
+iteration of the loop used, and add one character to it.</p></div><div class="solution"><pre class="code"><span class="keyword">var</span> <span class="variable">line</span> = <span class="string">&quot;&quot;</span>;
+<span class="keyword">var</span> <span class="variable">counter</span> = <span class="atom">0</span>;
+<span class="keyword">while</span> (<span class="variable">counter</span> &lt; <span class="atom">10</span>) {
+  <span class="variable">line</span> = <span class="variable">line</span> + <span class="string">&quot;#&quot;</span>;
+  <span class="variable">print</span>(<span class="variable">line</span>);
+  <span class="variable">counter</span> = <span class="variable">counter</span> + <span class="atom">1</span>;
+}</pre></div></div><hr/><div class="block"><p>You will have noticed the spaces I put in front of some statements.
+These are not required: The computer will accept the program just fine
+without them. In fact, even the line breaks in programs are optional.
+You could write them as a single long line if you felt like it. The
+role of the <a name="key62"></a>indentation inside blocks is to make the structure of
+the code clearer to a reader. Because new blocks can be opened inside
+other blocks, it can become hard to see where one block ends and
+another begins in a complex piece of code. When lines are indented,
+the visual shape of a program corresponds to the shape of the blocks
+inside it. I like to use two spaces for every open block, but tastes
+differ.</p><p>The field in the console where you can
+type programs will help you by automatically adding these spaces. This
+may seem annoying at first, but when you write a lot of code it
+becomes a huge time-saver. Pressing the tab key will re-indent the
+line your cursor is currently on.</p><p>In some cases, JavaScript allows you to omit the semicolon at the end
+of a statement. In other cases, it has to be there or strange things
+will happen. The rules for when it can be safely omitted are complex
+and weird. In this book, I won't leave out any semicolons, and I
+strongly urge you to do the same in your own programs.</p></div><hr/><div class="block"><p>The uses of <code>while</code> we have seen so far all show the same pattern.
+First, a 'counter' variable is created. This variable tracks the
+progress of the loop. The <code>while</code> itself contains a check, usually to
+see whether the counter has reached some boundary yet. Then, at the
+end of the loop body, the counter is updated.</p><p>A lot of loops fall into this pattern. For this reason, JavaScript,
+and similar languages, also provide a slightly shorter and more
+comprehensive form:</p><pre class="code"><span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">number</span> = <span class="atom">0</span>; <span class="variable">number</span> &lt;= <span class="atom">12</span>; <span class="variable">number</span> = <span class="variable">number</span> + <span class="atom">2</span>)
+  <span class="variable">show</span>(<span class="variable">number</span>);</pre><p>This program is exactly equivalent to the earlier even-number-printing
+example. The only change is that all the statements that are related
+to the 'state' of the loop are now on one line. The parentheses after
+the <a name="key63"></a><code>for</code> should contain two semicolons. The part before the first
+semicolon <em>initialises</em> the loop, usually by defining a variable. The
+second part is the expression that <em>checks</em> whether the loop must
+still continue. The final part <em>updates</em> the state of the loop. In
+most cases this is shorter and clearer than a <code>while</code> construction.</p></div><hr/><div class="block"><p>I have been using some rather odd <a name="key64"></a>capitalisation in some variable
+names. Because you can not have spaces in these names ― the computer
+would read them as two separate variables ― your choices for a name
+that is made of several words are more or less limited to the
+following: <code>fuzzylittleturtle</code>, <code>fuzzy_little_turtle</code>,
+<code>FuzzyLittleTurtle</code>, or <code>fuzzyLittleTurtle</code>. The first one is hard to
+read. Personally, I like the one with the underscores, though it is a
+little painful to type. However, the standard JavaScript functions,
+and most JavaScript programmers, follow the last one. It is not hard
+to get used to little things like that, so I will just follow the
+crowd and capitalise the first letter of every word after the first.</p><p>In a few cases, such as the <code>Number</code> function, the first letter of a
+variable is also capitalised. This was done to mark this function as a
+constructor. What a constructor is will become clear in <a href="chapter8.html">chapter 8</a>. For
+now, the important thing is not to be bothered by this apparent lack
+of consistency.</p><p>Note that names that have a special meaning, such as <code>var</code>, <code>while</code>,
+and <code>for</code> may not be used as variable names. These are called
+<a name="key65"></a>keywords. There are also a number of <a name="key66"></a>words which
+are 'reserved for use' in future versions of JavaScript. These are
+also officially not allowed to be used as variable names, though some
+browsers do allow them. The full list is rather long:</p><pre class="preformatted">abstract boolean break byte case catch char class const continue
+debugger default delete do double else enum export extends false
+final finally float for function goto if implements import in
+instanceof int interface long native new null package private
+protected public return short static super switch synchronized
+this throw throws transient true try typeof var void volatile
+while with</pre><p>Don't worry about memorising these for now, but remember that this
+might be the problem when something does not work as expected. In my
+experience, <code>char</code> (to store a one-character string) and <a name="key67"></a><code>class</code> are
+the most common names to accidentally use.</p></div><hr/><div class="block"><a name="exercise4"></a><div class="exercisenum">Ex. 2.4</div><div class="exercise"><p>Rewrite the solutions of the previous two exercises to use <code>for</code>
+instead of <code>while</code>.</p></div><div class="solution"><pre class="code"><span class="keyword">var</span> <span class="variable">result</span> = <span class="atom">1</span>;
+<span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">counter</span> = <span class="atom">0</span>; <span class="variable">counter</span> &lt; <span class="atom">10</span>; <span class="variable">counter</span> = <span class="variable">counter</span> + <span class="atom">1</span>)
+  <span class="variable">result</span> = <span class="variable">result</span> * <span class="atom">2</span>;
+<span class="variable">show</span>(<span class="variable">result</span>);</pre><p>Note that even if no block is opened with a '<code>{</code>', the statement in
+the loop is still indented two spaces to make it clear that it
+'belongs' to the line above it.</p><pre class="code"><span class="keyword">var</span> <span class="variable">line</span> = <span class="string">&quot;&quot;</span>;
+<span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">counter</span> = <span class="atom">0</span>; <span class="variable">counter</span> &lt; <span class="atom">10</span>; <span class="variable">counter</span> = <span class="variable">counter</span> + <span class="atom">1</span>) {
+  <span class="variable">line</span> = <span class="variable">line</span> + <span class="string">&quot;#&quot;</span>;
+  <span class="variable">print</span>(<span class="variable">line</span>);
+}</pre></div></div><hr/><div class="block"><p><a name="key68"></a><a name="key69"></a><a name="key70"></a><a name="key71"></a>A program often needs to 'update' a
+variable with a value that is based on its previous value. For example
+<code>counter = counter + 1</code>. JavaScript provides a shortcut for this:
+<code>counter += 1</code>. This also works for many other operators, for example
+<code>result *= 2</code> to double the value of <code>result</code>, or <code>counter -= 1</code> to
+count downwards.</p><p><a name="key72"></a><a name="key73"></a>For <code>counter += 1</code> and <code>counter -= 1</code> there are even
+shorter versions: <code>counter++</code> and <code>counter--</code>.</p></div><hr/><div class="block"><p>Loops are said to affect the <a name="key74"></a>control flow of a program. They change
+the order in which statements are executed. In many cases, another
+kind of flow is useful: skipping statements.</p><p>We want to show all numbers below 20 which are divisible both by 3 and
+by 4.</p><pre class="code"><span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">counter</span> = <span class="atom">0</span>; <span class="variable">counter</span> &lt; <span class="atom">20</span>; <span class="variable">counter</span>++) {
+  <span class="keyword">if</span> (<span class="variable">counter</span> % <span class="atom">3</span> == <span class="atom">0</span> &amp;&amp; <span class="variable">counter</span> % <span class="atom">4</span> == <span class="atom">0</span>)
+    <span class="variable">show</span>(<span class="variable">counter</span>);
+}</pre><p>The keyword <a name="key75"></a><code>if</code> is not too different from the keyword <code>while</code>: It
+checks the condition it is given (between parentheses), and executes
+the statement after it based on this condition. But it does this only
+once, so that the statement is executed zero or one time.</p><p>The trick with the remainder (<a name="key76"></a><code>%</code>) operator is an easy way to test
+whether a number is divisible by another number. If it is, the
+remainder of their division, which is what remainder gives you, is zero.</p><p>If we wanted to print all numbers below 20, but put
+parentheses around the ones that are not divisible by 4, we can do it
+like this:</p><pre class="code"><span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">counter</span> = <span class="atom">0</span>; <span class="variable">counter</span> &lt; <span class="atom">20</span>; <span class="variable">counter</span>++) {
+  <span class="keyword">if</span> (<span class="variable">counter</span> % <span class="atom">4</span> == <span class="atom">0</span>)
+    <span class="variable">print</span>(<span class="variable">counter</span>);
+  <span class="keyword">if</span> (<span class="variable">counter</span> % <span class="atom">4</span> != <span class="atom">0</span>)
+    <span class="variable">print</span>(<span class="string">&quot;(&quot;</span> + <span class="variable">counter</span> + <span class="string">&quot;)&quot;</span>);
+}</pre><p>But now the program has to determine whether <code>counter</code> is divisible by
+<code>4</code> two times. The same effect can be gotten by appending an <code>else</code>
+part after an <code>if</code> statement. The <a name="key77"></a><code>else</code> statement is executed only
+when the <code>if</code>'s condition is false.</p><pre class="code"><span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">counter</span> = <span class="atom">0</span>; <span class="variable">counter</span> &lt; <span class="atom">20</span>; <span class="variable">counter</span>++) {
+  <span class="keyword">if</span> (<span class="variable">counter</span> % <span class="atom">4</span> == <span class="atom">0</span>)
+    <span class="variable">print</span>(<span class="variable">counter</span>);
+  <span class="keyword">else</span>
+    <span class="variable">print</span>(<span class="string">&quot;(&quot;</span> + <span class="variable">counter</span> + <span class="string">&quot;)&quot;</span>);
+}</pre><p>To stretch this trivial example a bit further, we now want to print
+these same numbers, but add two stars after them when they are greater
+than 15, one star when they are greater than 10 (but not greater than
+15), and no stars otherwise.</p><pre class="code"><span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">counter</span> = <span class="atom">0</span>; <span class="variable">counter</span> &lt; <span class="atom">20</span>; <span class="variable">counter</span>++) {
+  <span class="keyword">if</span> (<span class="variable">counter</span> &gt; <span class="atom">15</span>)
+    <span class="variable">print</span>(<span class="variable">counter</span> + <span class="string">&quot;**&quot;</span>);
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="variable">counter</span> &gt; <span class="atom">10</span>)
+    <span class="variable">print</span>(<span class="variable">counter</span> + <span class="string">&quot;*&quot;</span>);
+  <span class="keyword">else</span>
+    <span class="variable">print</span>(<span class="variable">counter</span>);
+}</pre><p>This demonstrates that you can chain <code>if</code> statements together. In this
+case, the program first looks if <code>counter</code> is greater than <code>15</code>. If it
+is, the two stars are printed and the other tests are skipped. If it
+is not, we continue to check if <code>counter</code> is greater than <code>10</code>. Only
+if <code>counter</code> is also not greater than <code>10</code> does it arrive at the last
+<code>print</code> statement.</p></div><hr/><div class="block"><a name="exercise5"></a><div class="exercisenum">Ex. 2.5</div><div class="exercise"><p>Write a program to ask yourself, using <code>prompt</code>, what the value of 2 +
+2 is. If the answer is &quot;4&quot;, use <code>alert</code> to say something praising. If
+it is &quot;3&quot; or &quot;5&quot;, say &quot;Almost!&quot;. In other cases, say something mean.</p></div><div class="solution"><pre class="code"><span class="keyword">var</span> <span class="variable">answer</span> = <span class="variable">prompt</span>(<span class="string">&quot;You! What is the value of 2 + 2?&quot;</span>, <span class="string">&quot;&quot;</span>);
+<span class="keyword">if</span> (<span class="variable">answer</span> == <span class="string">&quot;4&quot;</span>)
+  <span class="variable">alert</span>(<span class="string">&quot;You must be a genius or something.&quot;</span>);
+<span class="keyword">else</span> <span class="keyword">if</span> (<span class="variable">answer</span> == <span class="string">&quot;3&quot;</span> || <span class="variable">answer</span> == <span class="string">&quot;5&quot;</span>)
+  <span class="variable">alert</span>(<span class="string">&quot;Almost!&quot;</span>);
+<span class="keyword">else</span>
+  <span class="variable">alert</span>(<span class="string">&quot;You're an embarrassment.&quot;</span>);</pre></div></div><hr/><div class="block"><p>When a loop does not always have to go all the way through to its end,
+the <a name="key78"></a><code>break</code> keyword can be useful. It immediately jumps out of the
+current loop, continuing after it. This program finds the first number
+that is greater than 20 and divisible by 7:</p><pre class="code"><span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">current</span> = <span class="atom">20</span>; ; <span class="variable">current</span>++) {
+  <span class="keyword">if</span> (<span class="variable">current</span> % <span class="atom">7</span> == <span class="atom">0</span>)
+    <span class="keyword">break</span>;
+}
+<span class="variable">print</span>(<span class="variable">current</span>);</pre><p>The <code>for</code> construct shown above does not have a part that checks for
+the end of the loop. This means that it is dependent on the <code>break</code>
+statement inside it to ever stop. The same program could also have
+been written as simply...</p><pre class="code"><span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">current</span> = <span class="atom">20</span>; <span class="variable">current</span> % <span class="atom">7</span> != <span class="atom">0</span>; <span class="variable">current</span>++)
+  ;
+<span class="variable">print</span>(<span class="variable">current</span>);</pre><p>In this case, the body of the loop is empty. A lone semicolon can be
+used to produce an empty statement. Here, the only effect of the loop
+is to increment the variable <code>current</code> to its desired value. But I
+needed an example that uses <code>break</code>, so pay attention to the first
+version too.</p></div><hr/><div class="block"><a name="exercise6"></a><div class="exercisenum">Ex. 2.6</div><div class="exercise"><p>Add a <code>while</code> and optionally a <code>break</code> to your solution for the
+previous exercise, so that it keeps repeating the question until a
+correct answer is given.</p><p>Note that <code>while (true) ...</code> can be used to create a loop that does
+not end on its own account. This is a bit silly, you ask the program
+to loop as long as <code>true</code> is <code>true</code>, but it is a useful trick.</p></div><div class="solution"><pre class="code"><span class="keyword">var</span> <span class="variable">answer</span>;
+<span class="keyword">while</span> (<span class="atom">true</span>) {
+  <span class="variable">answer</span> = <span class="variable">prompt</span>(<span class="string">&quot;You! What is the value of 2 + 2?&quot;</span>, <span class="string">&quot;&quot;</span>);
+  <span class="keyword">if</span> (<span class="variable">answer</span> == <span class="string">&quot;4&quot;</span>) {
+    <span class="variable">alert</span>(<span class="string">&quot;You must be a genius or something.&quot;</span>);
+    <span class="keyword">break</span>;
+  }
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="variable">answer</span> == <span class="string">&quot;3&quot;</span> || <span class="variable">answer</span> == <span class="string">&quot;5&quot;</span>) {
+    <span class="variable">alert</span>(<span class="string">&quot;Almost!&quot;</span>);
+  }
+  <span class="keyword">else</span> {
+    <span class="variable">alert</span>(<span class="string">&quot;You're an embarrassment.&quot;</span>);
+  }
+}</pre><p>Because the first <code>if</code>'s body now has two statements, I added braces
+around all the bodies. This is a matter of taste. Having an
+<code>if</code>/<code>else</code> chain where some of the bodies are blocks and others are
+single statements looks a bit lopsided to me, but you can make up your
+own mind about that.</p><p>Another solution, arguably nicer, but without <code>break</code>:</p><pre class="code"><span class="keyword">var</span> <span class="variable">value</span> = <span class="atom">null</span>;
+<span class="keyword">while</span> (<span class="variable">value</span> != <span class="string">&quot;4&quot;</span>) {
+  <span class="variable">value</span> = <span class="variable">prompt</span>(<span class="string">&quot;You! What is the value of 2 + 2?&quot;</span>, <span class="string">&quot;&quot;</span>);
+  <span class="keyword">if</span> (<span class="variable">value</span> == <span class="string">&quot;4&quot;</span>)
+    <span class="variable">alert</span>(<span class="string">&quot;You must be a genius or something.&quot;</span>);
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="variable">value</span> == <span class="string">&quot;3&quot;</span> || <span class="variable">value</span> == <span class="string">&quot;5&quot;</span>)
+    <span class="variable">alert</span>(<span class="string">&quot;Almost!&quot;</span>);
+  <span class="keyword">else</span>
+    <span class="variable">alert</span>(<span class="string">&quot;You're an embarrassment.&quot;</span>);
+}</pre></div></div><hr/><div class="block"><p>In the solution to the previous exercise there is a statement <code>var
+answer;</code>. This creates a variable named <code>answer</code>, but does not give it
+a value. What happens when you take the value of this variable?</p><pre class="code"><span class="keyword">var</span> <span class="variable">mysteryVariable</span>;
+<span class="variable">show</span>(<span class="variable">mysteryVariable</span>);</pre><p>In terms of tentacles, this variable ends in thin air, it has nothing
+to grasp. When you ask for the value of an empty place, you get a
+special value named <a name="key79"></a><code>undefined</code>. Functions which do not return an
+interesting value, such as <code>print</code> and <code>alert</code>, also return an
+<code>undefined</code> value.</p><pre class="code"><span class="variable">show</span>(<span class="variable">alert</span>(<span class="string">&quot;I am a side effect.&quot;</span>));</pre><p>There is also a similar value, <a name="key80"></a><code>null</code>, whose meaning is 'this
+variable is defined, but it does not have a value'. The difference in
+meaning between <code>undefined</code> and <code>null</code> is mostly academic, and usually
+not very interesting. In practical programs, it is often necessary to
+check whether something 'has a value'. In these cases, the expression
+<code>something == undefined</code> may be used, because, even though they are
+not exactly the same value, <code>null == undefined</code> will produce <code>true</code>.</p></div><hr/><div class="block"><p>Which brings us to another tricky subject...</p><pre class="code"><span class="variable">show</span>(<span class="atom">false</span> == <span class="atom">0</span>);
+<span class="variable">show</span>(<span class="string">&quot;&quot;</span> == <span class="atom">0</span>);
+<span class="variable">show</span>(<span class="string">&quot;5&quot;</span> == <span class="atom">5</span>);</pre><p><a name="key81"></a>All these give the value <code>true</code>. When comparing
+values that have different types, JavaScript uses a complicated and
+confusing set of rules. I am not going to try to explain them
+precisely, but in most cases it just tries to convert one of the
+values to the type of the other value. However, when <code>null</code> or
+<code>undefined</code> occur, it only produces <code>true</code> if both sides are <code>null</code> or
+<code>undefined</code>.</p><p>What if you want to test whether a variable refers to the value
+<code>false</code>? The rules for converting strings and numbers to boolean
+values state that <code>0</code> and the empty string count as <code>false</code>, while all
+the other values count as <code>true</code>. Because of this, the expression
+<code>variable == false</code> is also <code>true</code> when <code>variable</code> refers to <code>0</code> or
+<code>&quot;&quot;</code>. For cases like this, where you do <em>not</em> want any automatic type
+conversions to happen, there are two extra operators: <a name="key82"></a><code>===</code> and
+<a name="key83"></a><code>!==</code>. The first tests whether a value is precisely equal to the
+other, and the second tests whether it is not precisely equal.</p><pre class="code"><span class="variable">show</span>(<span class="atom">null</span> === <span class="atom">undefined</span>);
+<span class="variable">show</span>(<span class="atom">false</span> === <span class="atom">0</span>);
+<span class="variable">show</span>(<span class="string">&quot;&quot;</span> === <span class="atom">0</span>);
+<span class="variable">show</span>(<span class="string">&quot;5&quot;</span> === <span class="atom">5</span>);</pre><p>All these are <code>false</code>.</p></div><hr/><div class="block"><p>Values given as the condition in an <code>if</code>, <code>while</code>, or <code>for</code> statement
+do not have to be booleans. They will be automatically converted to
+booleans before they are checked. This means that the number <code>0</code>, the
+empty string <code>&quot;&quot;</code>, <code>null</code>, <code>undefined</code>, and of course <code>false</code>, will
+all count as false.</p><p>The fact that all other values are converted to <code>true</code> in this case
+makes it possible to leave out explicit comparisons in many
+situations. If a variable is known to contain either a string or
+<code>null</code>, one could check for this very simply...</p><pre class="code"><span class="keyword">var</span> <span class="variable">maybeNull</span> = <span class="atom">null</span>;
+<span class="comment">// ... mystery code that might put a string into maybeNull ...</span>
+<span class="keyword">if</span> (<span class="variable">maybeNull</span>)
+  <span class="variable">print</span>(<span class="string">&quot;maybeNull has a value&quot;</span>);</pre><p>Except in the case where the mystery code gives <code>maybeNull</code> the value
+<code>&quot;&quot;</code>. An empty string is false, so nothing is printed. Depending on
+what you are trying to do, this might be <em>wrong</em>. It is often a good
+idea to add an explicit <code>=== null</code> or <code>=== false</code> in cases like this
+to prevent subtle mistakes. The same occurs with number values that
+might be <code>0</code>.</p></div><hr/><div class="block"><p>The line that talks about 'mystery code' in the previous example might
+have looked a bit suspicious to you. It is often useful to include
+extra text in a program. The most common use for this is adding some
+explanations in human language to a program.</p><pre class="code"><span class="comment">// The variable counter, which is about to be defined, is going</span>
+<span class="comment">// to start with a value of 0, which is zero.</span>
+<span class="keyword">var</span> <span class="variable">counter</span> = <span class="atom">0</span>;
+<span class="comment">// Now, we are going to loop, hold on to your hat.</span>
+<span class="keyword">while</span> (<span class="variable">counter</span> &lt; <span class="atom">100</span> <span class="comment">/* counter is less than one hundred */</span>)
+<span class="comment">/* Every time we loop, we INCREMENT the value of counter,
+   Seriously, we just add one to it. */</span>
+  <span class="variable">counter</span>++;
+<span class="comment">// And then, we are done.</span></pre><p>This kind of text is called a <a name="key84"></a>comment. The rules are like this:
+'<code>/*</code>' starts a comment that goes on until a '<code>*/</code>' is found. '<code>//</code>'
+starts another kind of comment, which goes on until the end of the
+line.</p><p>As you can see, even the simplest programs can be made to look big,
+ugly, and complicated by simply adding a lot of comments to them.</p></div><hr/><div class="block"><p>There are some other situations that cause automatic <a name="key85"></a>type
+conversions to happen. If you add a non-string value to a string, the
+value is automatically converted to a string before it is
+concatenated. If you multiply a number and a string, JavaScript tries
+to make a number out of the string.</p><pre class="code"><span class="variable">show</span>(<span class="string">&quot;Apollo&quot;</span> + <span class="atom">5</span>);
+<span class="variable">show</span>(<span class="atom">null</span> + <span class="string">&quot;ify&quot;</span>);
+<span class="variable">show</span>(<span class="string">&quot;5&quot;</span> * <span class="atom">5</span>);
+<span class="variable">show</span>(<span class="string">&quot;strawberry&quot;</span> * <span class="atom">5</span>);</pre><p>The last statement prints <a name="key86"></a><code>NaN</code>, which is a special value. It stands
+for 'not a number', and is of type number (which might sound a little
+contradictory). In this case, it refers to the fact that a strawberry
+is not a number. All arithmetic operations on the value <code>NaN</code> result
+in <code>NaN</code>, which is why multiplying it by <code>5</code>, as in the example, still
+gives a <code>NaN</code> value. Also, and this can be disorienting at times, <code>NaN
+== NaN</code> equals <code>false</code>, checking whether a value is <code>NaN</code> can be done
+with the <a name="key87"></a><code>isNaN</code> function. <code>NaN</code> is another (the last) value that
+counts as <code>false</code> when converted to a boolean.</p><p>These automatic conversions can be very convenient, but they are also
+rather weird and error prone. Even though <code>+</code> and <code>*</code> are both
+arithmetic operators, they behave completely different in the example.
+In my own code, I use <code>+</code> to combine strings and non-strings a lot,
+but make it a point not to use <code>*</code> and the other numeric operators on
+string values. Converting a number to a string is always possible and
+straightforward, but converting a string to a number may not even work
+(as in the last line of the example). We can use <code>Number</code> to
+explicitly convert the string to a number, making it clear that we
+might run the risk of getting a <code>NaN</code> value.</p><pre class="code"><span class="variable">show</span>(<span class="variable">Number</span>(<span class="string">&quot;5&quot;</span>) * <span class="atom">5</span>);</pre></div><hr/><div class="block"><p>When we discussed the boolean operators <code>&amp;&amp;</code> and <code>||</code> earlier, I
+claimed they produced boolean values. This turns out to be a bit of an
+oversimplification. If you apply them to boolean values, they will
+indeed return booleans. But they can also be applied to other kinds of
+values, in which case they will return one of their arguments.</p><p>What <a name="key88"></a><code>||</code> really does is this: It looks at the value to the left of
+it first. If converting this value to a boolean would produce <code>true</code>,
+it returns this left value, otherwise it returns the one on its
+right. Check for yourself that this does the correct thing when the
+arguments are booleans. Why does it work like that? It turns out this
+is very practical. Consider this example:</p><pre class="code"><span class="keyword">var</span> <span class="variable">input</span> = <span class="variable">prompt</span>(<span class="string">&quot;What is your name?&quot;</span>, <span class="string">&quot;Kilgore Trout&quot;</span>);
+<span class="variable">print</span>(<span class="string">&quot;Well hello &quot;</span> + (<span class="variable">input</span> || <span class="string">&quot;dear&quot;</span>));</pre><p>If the user presses 'Cancel' or closes the <code>prompt</code> dialog in some
+other way without giving a name, the variable <code>input</code> will hold the
+value <code>null</code> or <code>&quot;&quot;</code>. Both of these would give <code>false</code> when converted
+to a boolean. The expression <code>input || &quot;dear&quot;</code> can in this case be
+read as 'the value of the variable <code>input</code>, or else the string
+<code>&quot;dear&quot;</code>'. It is an easy way to provide a 'fallback' value.</p><p>The <a name="key89"></a><code>&amp;&amp;</code> operator works similarly, but the other way around. When
+the value to its left is something that would give <code>false</code> when
+converted to a boolean, it returns that value, otherwise it returns
+the value on its right.</p><p>Another property of these two operators is that the expression to
+their right is only evaluated when necessary. In the case of <code>true ||
+X</code>, no matter what <code>X</code> is, the result will be <code>true</code>, so <code>X</code> is never
+evaluated, and if it has side effects they never happen. The same goes
+for <code>false &amp;&amp; X</code>.</p><pre class="code"><span class="atom">false</span> || <span class="variable">alert</span>(<span class="string">&quot;I'm happening!&quot;</span>);
+<span class="atom">true</span> || <span class="variable">alert</span>(<span class="string">&quot;Not me.&quot;</span>);</pre></div><ol class="footnotes"><li><a name="footnote1"></a>Bits are any kinds of two-valued things, usually described as <code>0</code>s
+and <code>1</code>s. Inside the computer, they take forms like a high or low
+electrical charge, a strong or weak signal, a shiny or dull spot on
+the surface of a CD.</li><li><a name="footnote2"></a>If you were expecting something like <code>10010000</code> here ― good call,
+but read on. JavaScript's numbers are not stored as integers.</li><li><a name="footnote3"></a>Actually, 53, because of a trick that can be used to get one bit
+for free. Look up the 'IEEE 754' format if you are curious about the
+details.</li><li><a name="footnote4"></a>When you type string values at the console, you'll notice that they
+will come back with the quotes and backslashes the way you typed them.
+To get special characters to show properly, you can do <code>print(&quot;a\nb&quot;)</code>
+― why this works, we will see in a moment.</li><li><a name="footnote5"></a>The bit bucket is supposedly the place where old bits are kept. On
+some systems, the programmer has to manually empty it now and then.
+Fortunately, JavaScript comes with a fully-automatic bit-recycling
+system.</li></ol><div class="navigation"><a href="chapter1.html">&lt;&lt; Previous chapter</a> | <a href="contents.html">Contents</a> | <a href="index.html">Cover</a> | <a href="chapter3.html">Next chapter &gt;&gt;</a></div><div class="footer">© <a href="mailto:marijnh@gmail.com">Marijn Haverbeke</a> (<a href="http://creativecommons.org/licenses/by/3.0/">license</a>), written March to July 2007, last modified on April 4 2012.</div></div><script type="text/javascript" src="js/mochi.js"> </script><script type="text/javascript" src="js/codemirror.js"> </script><script type="text/javascript" src="js/ejs.js"> </script></body></html>
